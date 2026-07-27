@@ -1,226 +1,226 @@
 [
   {
     "ticker": "AKENR",
-    "name": "Ak Enerji",
+    "name": "Ak Enerji Elektrik Üretim A.Ş.",
     "entry_level": 11.0,
-    "current_observed": 11.51,
-    "note": "Akenr 11₺ değerlendirilebilir. 10.38 TL seviyeleri takip konusu.",
-    "performance": "+4.64%"
+    "current_live_price": 10.56,
+    "performance": "-4.00%",
+    "note": "[Oğuz Analizi] Akenr 11₺ değerlendirip satanlar için. 10.38₺ takibi."
   },
   {
-    "ticker": "KRON",
-    "name": "Kron Telekomünikasyon",
+    "ticker": "KRONT",
+    "name": "Kron Telekomünikasyon Hizmetleri",
     "entry_level": 22.16,
-    "current_observed": 24.26,
-    "note": "22.16₺ ve 22.80₺ seviyelerinden takip edilebilir. 23.88₺ direnci sonrası hareket.",
-    "performance": "+9.47%"
+    "current_live_price": 24.26,
+    "performance": "+9.48%",
+    "note": "[Oğuz Analizi] 22.16₺ ve 22.80₺ bakılabilir, %5 direnç bölgesi."
   },
   {
     "ticker": "YAYLA",
-    "name": "Yayla Enerji",
-    "entry_level": 23.10,
-    "current_observed": 24.06,
-    "note": "23.10₺ ve 23.78₺ tradelik bakılabilir. 24₺ seviyesine kadar hareket potansiyeli.",
-    "performance": "+4.15%"
+    "name": "Yayla Enerji Üretim Turizm",
+    "entry_level": 23.1,
+    "current_live_price": 22.98,
+    "performance": "-0.52%",
+    "note": "[Oğuz Analizi] 23.10₺ ve 23.78₺ tradelik bakılabilir, 24₺ hareketi."
   },
   {
     "ticker": "DOFRB",
-    "name": "Dof Robotik",
+    "name": "Dof Robotik Sanayi A.Ş.",
     "entry_level": 75.0,
-    "current_observed": 107.60,
-    "note": "75₺'den 90₺ ve 107.60₺ seviyesine hareket. Çekilme fırsatları takip edilebilir.",
-    "performance": "+43.46%"
+    "current_live_price": 151.8,
+    "performance": "+102.40%",
+    "note": "[Oğuz Analizi] 75₺'den 90₺ ve 107.60₺ seviyesine hareket."
   },
   {
     "ticker": "MEYSU",
-    "name": "Meysu Gıda",
+    "name": "Meysu Gıda Sanayi A.Ş.",
     "entry_level": 13.03,
-    "current_observed": 13.79,
-    "note": "13.03₺ tradelik bakıyorum. %6.5 marj bekleniyor.",
-    "performance": "+5.83%"
+    "current_live_price": 13.77,
+    "performance": "+5.68%",
+    "note": "[Oğuz Analizi] Meysu 13.03₺ tradelik bakıyorum (%6.5 marj)."
   },
   {
     "ticker": "EKOS",
-    "name": "Ekos Teknoloji",
+    "name": "Ekos Teknoloji ve Elektrik A.Ş.",
     "entry_level": 6.0,
-    "current_observed": 6.30,
-    "note": "Ekos 6₺ seviyesinden bakılabilir.",
-    "performance": "+5.00%"
+    "current_live_price": 6.03,
+    "performance": "+0.50%",
+    "note": "[Oğuz Analizi] Ekos 6₺ seviyesinden bakılabilir."
   },
   {
     "ticker": "LILAK",
-    "name": "Lila Kağıt",
-    "entry_level": 30.80,
-    "current_observed": 31.32,
-    "note": "Lilak 30.80₺'de iyi duruyor. %2'ye yakın güzel marj.",
-    "performance": "+1.69%"
+    "name": "Lila Kağıt Sanayi ve Ticaret",
+    "entry_level": 30.8,
+    "current_live_price": 30.16,
+    "performance": "-2.08%",
+    "note": "[Oğuz Analizi] Lilak 30.80₺'de iyi duruyor (%2 güzel marj)."
   },
   {
     "ticker": "OBASE",
-    "name": "Obase Bilgisayar",
+    "name": "Obase Bilgisayar ve Danışmanlık",
     "entry_level": 47.98,
-    "current_observed": 47.98,
-    "note": "Obase Bilgisayar takibe alındı.",
-    "performance": "+3.98%"
+    "current_live_price": 44.44,
+    "performance": "-7.38%",
+    "note": "[Oğuz Analizi] Obase 47.98₺ seviyesinden takibe alındı."
   },
   {
     "ticker": "NETCD",
-    "name": "Netcad Yazılım",
-    "entry_level": 144.50,
-    "current_observed": 148.70,
-    "note": "Netcd 144.50₺ takibe alındı. %3.5 marj.",
-    "performance": "+2.90%"
+    "name": "Netcad Yazılım A.Ş.",
+    "entry_level": 144.5,
+    "current_live_price": 139.3,
+    "performance": "-3.60%",
+    "note": "[Oğuz Analizi] Netcd 144.50₺ takibe alındı (%3.5 marj)."
   },
   {
     "ticker": "ASTOR",
-    "name": "Astor Enerji",
+    "name": "Astor Enerji A.Ş.",
     "entry_level": 286.0,
-    "current_observed": 292.75,
-    "note": "286₺ Astor bakılabilir. 295₺ ve 299₺ direnç seviyeleri.",
-    "performance": "+2.36%"
+    "current_live_price": 297.0,
+    "performance": "+3.85%",
+    "note": "[Oğuz Analizi] 286₺ Astor bakılabilir, 295₺ ve 299₺ dirençleri."
   },
   {
     "ticker": "IZMDC",
-    "name": "İzmir Demir Çelik",
+    "name": "İzmir Demir Çelik Sanayi A.Ş.",
     "entry_level": 6.156,
-    "current_observed": 12.81,
-    "note": "6.156₺ seviyesinden takip başladı. 12.81₺ seviyesine ulaştı.",
-    "performance": "+108.09%"
+    "current_live_price": 12.16,
+    "performance": "+97.53%",
+    "note": "[Oğuz Analizi] Izmdc 6.156₺ buradan takip ediyorum (%110 prim)."
   },
   {
     "ticker": "AKHAN",
-    "name": "Akhan Un",
-    "entry_level": 23.80,
-    "current_observed": 44.22,
-    "note": "23.80₺ / 25.12₺ seviyesinden tarım emtiası beklentisiyle takip.",
-    "performance": "+85.80%"
+    "name": "Akhan Un Fabrikası A.Ş.",
+    "entry_level": 23.8,
+    "current_live_price": 40.16,
+    "performance": "+68.74%",
+    "note": "[Oğuz Analizi] 23.80₺ / 25.12₺ seviyesinden tarım emtiası takibi."
   },
   {
     "ticker": "ZERGY",
-    "name": "Zergay Gayrimenkul",
+    "name": "Zergay Gayrimenkul Yatırım A.Ş.",
     "entry_level": 10.06,
-    "current_observed": 10.42,
-    "note": "Zergy 10.06₺ buradan takip ediyorum. 10.50₺ direnç bölgesi.",
-    "performance": "+3.58%"
+    "current_live_price": 10.24,
+    "performance": "+1.79%",
+    "note": "[Oğuz Analizi] Zergy 10.06₺ takip, 10.50₺ direnç bölgesi."
   },
   {
     "ticker": "MARMR",
-    "name": "Marmara Holding",
+    "name": "Marmara Holding A.Ş.",
     "entry_level": 2.22,
-    "current_observed": 2.39,
-    "note": "Marmr 2.22₺ yine bakılır. %8 marj hedefli.",
-    "performance": "+7.66%"
+    "current_live_price": 2.23,
+    "performance": "+0.45%",
+    "note": "[Oğuz Analizi] Marmr 2.22₺ yine bakılır (%8 marj)."
   },
   {
     "ticker": "GWIND",
-    "name": "Galata Wind Enerji",
+    "name": "Galata Wind Enerji A.Ş.",
     "entry_level": 24.36,
-    "current_observed": 26.02,
-    "note": "Gwind 24.36₺ benzer marj beklenebilir. %7.5 marj.",
-    "performance": "+6.81%"
+    "current_live_price": 25.38,
+    "performance": "+4.19%",
+    "note": "[Oğuz Analizi] Gwind 24.36₺ benzer marj beklenebilir (%7.5)."
   },
   {
     "ticker": "KLRHO",
-    "name": "Kiler Holding",
+    "name": "Kiler Holding A.Ş.",
     "entry_level": 83.0,
-    "current_observed": 85.65,
-    "note": "Klrho 83₺ yine tradelik bakılabilir. %3.5 marj.",
-    "performance": "+3.19%"
+    "current_live_price": 81.15,
+    "performance": "-2.23%",
+    "note": "[Oğuz Analizi] Klrho 83₺ yine tradelik bakılabilir (%3.5)."
   },
   {
     "ticker": "KFEIN",
-    "name": "Kafein Yazılım",
-    "entry_level": 9.40,
-    "current_observed": 9.40,
-    "note": "Kfein 9.40₺ seviyesinden takibe alındı.",
-    "performance": "+3.75%"
+    "name": "Kafein Yazılım Hizmetleri A.Ş.",
+    "entry_level": 9.4,
+    "current_live_price": 8.92,
+    "performance": "-5.11%",
+    "note": "[Oğuz Analizi] Kfein 9.40₺ seviyesinden takibe alındı."
   },
   {
     "ticker": "SSAAT",
-    "name": "Saat ve Saat",
+    "name": "Saat ve Saat Sanayi A.Ş.",
     "entry_level": 42.24,
-    "current_observed": 42.24,
-    "note": "Saat ve Saat 42.24₺ takip seviyesi.",
-    "performance": "+0.72%"
+    "current_live_price": 46.16,
+    "performance": "+9.28%",
+    "note": "[Oğuz Analizi] SSAAT 42.24₺ takip seviyesi."
   },
   {
     "ticker": "RUZYE",
-    "name": "Ruzy Madencilik",
-    "entry_level": 9.20,
-    "current_observed": 9.65,
-    "note": "Ruzye 9.20₺ anlık ağır yükseldi, tradelik bakılır.",
-    "performance": "+4.89%"
+    "name": "Ruzy Madencilik A.Ş.",
+    "entry_level": 9.2,
+    "current_live_price": 9.5,
+    "performance": "+3.26%",
+    "note": "[Oğuz Analizi] Ruzye 9.20₺ anlık ağır yükseldi, tradelik bakılır."
   },
   {
     "ticker": "OZATD",
-    "name": "Ozfatura",
+    "name": "Ozfatura Teknoloji A.Ş.",
     "entry_level": 151.0,
-    "current_observed": 3000.0,
-    "note": "151 TL'den alınıp orta-uzun vade takip edilen analiz örneği.",
-    "performance": "+1886.75%"
+    "current_live_price": 3120.0,
+    "performance": "+1966.23%",
+    "note": "[Oğuz Analizi] 151 TL'den alınıp orta-uzun vade takip edilen analiz."
   },
   {
     "ticker": "TEHOL",
-    "name": "Tek-Art Holding",
+    "name": "Tek-Art Holding A.Ş.",
     "entry_level": 43.24,
-    "current_observed": 43.24,
-    "note": "%140.84 net kâr ile kapatılan analiz örneği.",
-    "performance": "+140.84%"
+    "current_live_price": 43.1,
+    "performance": "-0.32%",
+    "note": "[Oğuz Analizi] %140.84 net kâr ile kapatılan analiz."
   },
   {
     "ticker": "GENKM",
-    "name": "Gentaş Kimya",
+    "name": "Gentaş Kimya Sanayi A.Ş.",
     "entry_level": 12.25,
-    "current_observed": 12.59,
-    "note": "Genkm 12.25₺ buradan takip edilebilir. Yetişemeyene %4 marj.",
-    "performance": "+2.78%"
+    "current_live_price": 12.18,
+    "performance": "-0.57%",
+    "note": "[Oğuz Analizi] Genkm 12.25₺ takip, yetişemeyene %4 marj."
   },
   {
     "ticker": "UCAYM",
-    "name": "Ucay Mühendislik",
-    "entry_level": 28.80,
-    "current_observed": 28.80,
-    "note": "29.20₺ üzeri takip konusu.",
-    "performance": "-0.35%"
+    "name": "Ucay Mühendislik A.Ş.",
+    "entry_level": 28.8,
+    "current_live_price": 28.46,
+    "performance": "-1.18%",
+    "note": "[Oğuz Analizi] 29.20₺ üzeri takip konusu."
   },
   {
     "ticker": "BULGS",
-    "name": "Bulls Girişim",
+    "name": "Bulls Girişim Sermayesi A.Ş.",
     "entry_level": 39.48,
-    "current_observed": 40.80,
-    "note": "Bulgs 39.48₺ tradelik takip edilebilir. %3.5 marj.",
-    "performance": "+3.34%"
+    "current_live_price": 39.1,
+    "performance": "-0.96%",
+    "note": "[Oğuz Analizi] Bulgs 39.48₺ tradelik takip edilebilir (%3.5)."
   },
   {
     "ticker": "EKDMR",
-    "name": "Ekinciler Demir Çelik",
-    "entry_level": 54.10,
-    "current_observed": 54.10,
-    "note": "Ekinciler Demir Çelik 54.10₺ seviyesinden takibe alındı.",
-    "performance": "+2.27%"
+    "name": "Ekinciler Demir Çelik A.Ş.",
+    "entry_level": 54.1,
+    "current_live_price": 51.65,
+    "performance": "-4.53%",
+    "note": "[Oğuz Analizi] Ekinciler Demir Çelik 54.10₺ takibe alındı."
   },
   {
     "ticker": "MOGAN",
-    "name": "Mogan Enerji",
+    "name": "Mogan Enerji Yatırım A.Ş.",
     "entry_level": 12.75,
-    "current_observed": 19.45,
-    "note": "Mogan 12.75₺ buradan pozisyon açıyor.",
-    "performance": "+52.55%"
+    "current_live_price": 17.63,
+    "performance": "+38.27%",
+    "note": "[Oğuz Analizi] Mogan 12.75₺ buradan pozisyon açıyor (%60 prim)."
   },
   {
     "ticker": "KCAER",
-    "name": "Kocaer Çelik",
+    "name": "Kocaer Çelik Sanayi A.Ş.",
     "entry_level": 11.14,
-    "current_observed": 16.06,
-    "note": "Kcaer 11.14₺ tradelik değil buradan değerlenme.",
-    "performance": "+44.17%"
+    "current_live_price": 15.0,
+    "performance": "+34.65%",
+    "note": "[Oğuz Analizi] Kcaer 11.14₺ tradelik değil değerlenme (%45)."
   },
   {
     "ticker": "DSTKF",
-    "name": "Destek Faktoring",
-    "entry_level": 2.18,
-    "current_observed": 2.27,
-    "note": "Destek Faktoring çorba parası tradelik alım.",
-    "performance": "+4.13%"
+    "name": "Destek Faktoring A.Ş.",
+    "entry_level": 2180.0,
+    "current_live_price": 2048.0,
+    "performance": "-6.06%",
+    "note": "[Oğuz Analizi] Destek Faktoring tradelik takip (Giriş ~2.180 TL, Anlık ~2.048 TL)."
   }
 ]
