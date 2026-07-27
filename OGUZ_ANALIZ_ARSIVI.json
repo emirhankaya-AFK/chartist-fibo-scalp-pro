@@ -1,0 +1,226 @@
+[
+  {
+    "ticker": "AKENR",
+    "name": "Ak Enerji",
+    "entry_level": 11.0,
+    "current_observed": 11.51,
+    "note": "Akenr 11₺ değerlendirilebilir. 10.38 TL seviyeleri takip konusu.",
+    "performance": "+4.64%"
+  },
+  {
+    "ticker": "KRON",
+    "name": "Kron Telekomünikasyon",
+    "entry_level": 22.16,
+    "current_observed": 24.26,
+    "note": "22.16₺ ve 22.80₺ seviyelerinden takip edilebilir. 23.88₺ direnci sonrası hareket.",
+    "performance": "+9.47%"
+  },
+  {
+    "ticker": "YAYLA",
+    "name": "Yayla Enerji",
+    "entry_level": 23.10,
+    "current_observed": 24.06,
+    "note": "23.10₺ ve 23.78₺ tradelik bakılabilir. 24₺ seviyesine kadar hareket potansiyeli.",
+    "performance": "+4.15%"
+  },
+  {
+    "ticker": "DOFRB",
+    "name": "Dof Robotik",
+    "entry_level": 75.0,
+    "current_observed": 107.60,
+    "note": "75₺'den 90₺ ve 107.60₺ seviyesine hareket. Çekilme fırsatları takip edilebilir.",
+    "performance": "+43.46%"
+  },
+  {
+    "ticker": "MEYSU",
+    "name": "Meysu Gıda",
+    "entry_level": 13.03,
+    "current_observed": 13.79,
+    "note": "13.03₺ tradelik bakıyorum. %6.5 marj bekleniyor.",
+    "performance": "+5.83%"
+  },
+  {
+    "ticker": "EKOS",
+    "name": "Ekos Teknoloji",
+    "entry_level": 6.0,
+    "current_observed": 6.30,
+    "note": "Ekos 6₺ seviyesinden bakılabilir.",
+    "performance": "+5.00%"
+  },
+  {
+    "ticker": "LILAK",
+    "name": "Lila Kağıt",
+    "entry_level": 30.80,
+    "current_observed": 31.32,
+    "note": "Lilak 30.80₺'de iyi duruyor. %2'ye yakın güzel marj.",
+    "performance": "+1.69%"
+  },
+  {
+    "ticker": "OBASE",
+    "name": "Obase Bilgisayar",
+    "entry_level": 47.98,
+    "current_observed": 47.98,
+    "note": "Obase Bilgisayar takibe alındı.",
+    "performance": "+3.98%"
+  },
+  {
+    "ticker": "NETCD",
+    "name": "Netcad Yazılım",
+    "entry_level": 144.50,
+    "current_observed": 148.70,
+    "note": "Netcd 144.50₺ takibe alındı. %3.5 marj.",
+    "performance": "+2.90%"
+  },
+  {
+    "ticker": "ASTOR",
+    "name": "Astor Enerji",
+    "entry_level": 286.0,
+    "current_observed": 292.75,
+    "note": "286₺ Astor bakılabilir. 295₺ ve 299₺ direnç seviyeleri.",
+    "performance": "+2.36%"
+  },
+  {
+    "ticker": "IZMDC",
+    "name": "İzmir Demir Çelik",
+    "entry_level": 6.156,
+    "current_observed": 12.81,
+    "note": "6.156₺ seviyesinden takip başladı. 12.81₺ seviyesine ulaştı.",
+    "performance": "+108.09%"
+  },
+  {
+    "ticker": "AKHAN",
+    "name": "Akhan Un",
+    "entry_level": 23.80,
+    "current_observed": 44.22,
+    "note": "23.80₺ / 25.12₺ seviyesinden tarım emtiası beklentisiyle takip.",
+    "performance": "+85.80%"
+  },
+  {
+    "ticker": "ZERGY",
+    "name": "Zergay Gayrimenkul",
+    "entry_level": 10.06,
+    "current_observed": 10.42,
+    "note": "Zergy 10.06₺ buradan takip ediyorum. 10.50₺ direnç bölgesi.",
+    "performance": "+3.58%"
+  },
+  {
+    "ticker": "MARMR",
+    "name": "Marmara Holding",
+    "entry_level": 2.22,
+    "current_observed": 2.39,
+    "note": "Marmr 2.22₺ yine bakılır. %8 marj hedefli.",
+    "performance": "+7.66%"
+  },
+  {
+    "ticker": "GWIND",
+    "name": "Galata Wind Enerji",
+    "entry_level": 24.36,
+    "current_observed": 26.02,
+    "note": "Gwind 24.36₺ benzer marj beklenebilir. %7.5 marj.",
+    "performance": "+6.81%"
+  },
+  {
+    "ticker": "KLRHO",
+    "name": "Kiler Holding",
+    "entry_level": 83.0,
+    "current_observed": 85.65,
+    "note": "Klrho 83₺ yine tradelik bakılabilir. %3.5 marj.",
+    "performance": "+3.19%"
+  },
+  {
+    "ticker": "KFEIN",
+    "name": "Kafein Yazılım",
+    "entry_level": 9.40,
+    "current_observed": 9.40,
+    "note": "Kfein 9.40₺ seviyesinden takibe alındı.",
+    "performance": "+3.75%"
+  },
+  {
+    "ticker": "SSAAT",
+    "name": "Saat ve Saat",
+    "entry_level": 42.24,
+    "current_observed": 42.24,
+    "note": "Saat ve Saat 42.24₺ takip seviyesi.",
+    "performance": "+0.72%"
+  },
+  {
+    "ticker": "RUZYE",
+    "name": "Ruzy Madencilik",
+    "entry_level": 9.20,
+    "current_observed": 9.65,
+    "note": "Ruzye 9.20₺ anlık ağır yükseldi, tradelik bakılır.",
+    "performance": "+4.89%"
+  },
+  {
+    "ticker": "OZATD",
+    "name": "Ozfatura",
+    "entry_level": 151.0,
+    "current_observed": 3000.0,
+    "note": "151 TL'den alınıp orta-uzun vade takip edilen analiz örneği.",
+    "performance": "+1886.75%"
+  },
+  {
+    "ticker": "TEHOL",
+    "name": "Tek-Art Holding",
+    "entry_level": 43.24,
+    "current_observed": 43.24,
+    "note": "%140.84 net kâr ile kapatılan analiz örneği.",
+    "performance": "+140.84%"
+  },
+  {
+    "ticker": "GENKM",
+    "name": "Gentaş Kimya",
+    "entry_level": 12.25,
+    "current_observed": 12.59,
+    "note": "Genkm 12.25₺ buradan takip edilebilir. Yetişemeyene %4 marj.",
+    "performance": "+2.78%"
+  },
+  {
+    "ticker": "UCAYM",
+    "name": "Ucay Mühendislik",
+    "entry_level": 28.80,
+    "current_observed": 28.80,
+    "note": "29.20₺ üzeri takip konusu.",
+    "performance": "-0.35%"
+  },
+  {
+    "ticker": "BULGS",
+    "name": "Bulls Girişim",
+    "entry_level": 39.48,
+    "current_observed": 40.80,
+    "note": "Bulgs 39.48₺ tradelik takip edilebilir. %3.5 marj.",
+    "performance": "+3.34%"
+  },
+  {
+    "ticker": "EKDMR",
+    "name": "Ekinciler Demir Çelik",
+    "entry_level": 54.10,
+    "current_observed": 54.10,
+    "note": "Ekinciler Demir Çelik 54.10₺ seviyesinden takibe alındı.",
+    "performance": "+2.27%"
+  },
+  {
+    "ticker": "MOGAN",
+    "name": "Mogan Enerji",
+    "entry_level": 12.75,
+    "current_observed": 19.45,
+    "note": "Mogan 12.75₺ buradan pozisyon açıyor.",
+    "performance": "+52.55%"
+  },
+  {
+    "ticker": "KCAER",
+    "name": "Kocaer Çelik",
+    "entry_level": 11.14,
+    "current_observed": 16.06,
+    "note": "Kcaer 11.14₺ tradelik değil buradan değerlenme.",
+    "performance": "+44.17%"
+  },
+  {
+    "ticker": "DSTKF",
+    "name": "Destek Faktoring",
+    "entry_level": 2.18,
+    "current_observed": 2.27,
+    "note": "Destek Faktoring çorba parası tradelik alım.",
+    "performance": "+4.13%"
+  }
+]
