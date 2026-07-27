@@ -246,7 +246,7 @@ def send_daily_summary_bist(payload: dict) -> None:
     stocks = payload.get("stocks", [])
     top_candidates = sorted(stocks, key=lambda s: s.get("modelScore", 0), reverse=True)[:3]
     top_text = "\n".join([
-        f"  • #{s['ticker']} (Puan: {s['modelScore']}) - Fiyat: {s['price']} TL (Hedef TP1: {s['targets'][0]} TL)"
+        f"  • #{s['ticker']} (Puan: {s['modelScore']}) - Fiyat: {s['price']} TL | TP1: {s['targets'][0]} TL | TP2: {s['targets'][1]} TL | TP3: {s['targets'][2]} TL"
         for s in top_candidates
     ]) if top_candidates else "  • Fırsat hisse bulunamadı"
 
@@ -310,6 +310,11 @@ def run_once() -> list[dict]:
             is_double = "ÇAO" in badge_info
             header = "🚀 *SÜPER KONSENSÜS ALARMI*" if is_super else "🔥 *ÇİFTE ALGO ONAY ALARMI*" if is_double else "⚡ *MODEL FIRSAT ALARMI*"
 
+            targets = item.get("targets") or [item["price"], item["price"], item["price"]]
+            tp1 = targets[0] if len(targets) > 0 else item["price"]
+            tp2 = targets[1] if len(targets) > 1 else tp1
+            tp3 = targets[2] if len(targets) > 2 else tp2
+
             message = (
                 f"{header}\n\n"
                 f"📌 *Hisse:* #{item['ticker']}\n"
@@ -319,7 +324,10 @@ def run_once() -> list[dict]:
                 f"💵 *Güncel Fiyat:* {item['price']} TL\n"
                 f"🎯 *Alım Bölgesi:* {item['entry'][0]}–{item['entry'][1]} TL arası\n"
                 f"🛑 *Zarar Kes (Stop):* {item['stop']} TL (Altına düşerse satıp çıkılmalı)\n"
-                f"🚀 *Kâr Hedefi (TP1):* {item['targets'][0]} TL seviyesine hareket edebilir."
+                f"🚀 *Kâr Hedefleri:*\n"
+                f"  • *1. Hedef (TP1):* {tp1} TL\n"
+                f"  • *2. Hedef (TP2):* {tp2} TL\n"
+                f"  • *3. Hedef (TP3):* {tp3} TL"
             )
             delivered = _notify(message)
             _append_notification_log(item, message, delivered)
