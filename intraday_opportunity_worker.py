@@ -89,20 +89,34 @@ def _append_notification_log(item: dict, message: str, delivered: bool) -> None:
 
 
 def _notify(message: str) -> bool:
+    sent = False
     topic = os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()
-    if not topic:
-        return False
-    url = f"https://ntfy.sh/{topic}"
-    headers = {"Title": "Chartist Fibo-Scalp Pro", "Priority": "high", "Tags": "chart_with_upwards_trend,bell"}
-    token = os.getenv("NTFY_TOKEN", "").strip()
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    request = urllib.request.Request(url, data=message.encode("utf-8"), headers=headers, method="POST")
-    try:
-        with urllib.request.urlopen(request, timeout=15):
-            return True
-    except Exception:
-        return False
+    if topic:
+        url = f"https://ntfy.sh/{topic}"
+        headers = {"Title": "Chartist Fibo-Scalp Pro", "Priority": "high", "Tags": "chart_with_upwards_trend,bell"}
+        token = os.getenv("NTFY_TOKEN", "").strip()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        request = urllib.request.Request(url, data=message.encode("utf-8"), headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=15):
+                sent = True
+        except Exception:
+            pass
+
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+    chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
+    if bot_token and chat_id:
+        try:
+            tg_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            payload = json.dumps({"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}).encode("utf-8")
+            req = urllib.request.Request(tg_url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+            with urllib.request.urlopen(req, timeout=15):
+                sent = True
+        except Exception:
+            pass
+
+    return sent
 
 
 def _append_trade_event(track: dict, event_type: str, price: float, now: str) -> None:

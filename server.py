@@ -207,8 +207,10 @@ def api_auto_portfolio_reset():
         return jsonify({"status": "error", "message": str(exc)}), 503
 
 
+if _worker_enabled:
+    threading.Thread(target=_opportunity_loop, name="opportunity-worker", daemon=True).start()
+
+
 if __name__ == "__main__":
-    if _worker_enabled:
-        threading.Thread(target=_opportunity_loop, name="opportunity-worker", daemon=True).start()
     app.run(host="127.0.0.1", port=8080, debug=False)
 
