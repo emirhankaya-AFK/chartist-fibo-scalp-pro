@@ -217,11 +217,66 @@ def manual_opportunity_snapshot(payload: dict) -> list[dict]:
     return rows
 
 
+def send_daily_summary_bist(payload: dict) -> None:
+    now_dt = datetime.now().astimezone()
+    # Trigger after 18:15 market close
+    if now_dt.hour < 18 or (now_dt.hour == 18 and now_dt.minute < 15):
+        return
+
+    today_str = now_dt.strftime("%Y-%m-%d")
+    state = _load_state()
+    if state.get("last_eod_summary_date") == today_str:
+        return
+
+    index_info = payload.get("index", {})
+    xu100_price = index_info.get("price", "—")
+    xu100_daily = index_info.get("daily", 0.0)
+    wind_text = f"BIST100: {xu100_price} TL (%{xu100_daily:+.2f})"
+
+    stocks = payload.get("stocks", [])
+    top_candidates = sorted(stocks, key=lambda s: s.get("modelScore", 0), reverse=True)[:3]
+    top_text = "\n".join([
+        f"  • #{s['ticker']} (Puan: {s['modelScore']}) - Alış: {s['price']} TL | TP1: {s['targets'][0]} TL"
+        for s in top_candidates
+    ]) if top_candidates else "  • Fırsat hisse bulunamadı"
+
+    try:
+        from auto_portfolio import load_portfolio
+        portfolio = load_portfolio()
+        initial = portfolio.get("initial_capital", 10000.0)
+        cash = portfolio.get("current_cash", 10000.0)
+        positions = portfolio.get("positions", [])
+        equity_val = sum(pos.get("current_price", 0) * pos.get("qty", 0) for pos in positions)
+        total_val = cash + equity_val
+        net_pnl = total_val - initial
+        net_pnl_pct = (net_pnl / initial) * 100
+
+        portfolio_text = (
+            f"  • Toplam Bakiye: {total_val:,.2f} TL\n"
+            f"  • Boştaki Nakit: {cash:,.2f} TL ({len(positions)} Aktif Pozisyon)\n"
+            f"  • Net K/Z: {net_pnl:+.2f} TL (%{net_pnl_pct:+.2f})"
+        )
+    except Exception:
+        portfolio_text = "  • Portföy bilgisi alınamadı"
+
+    message = (
+        f"📊 *BIST100 GÜN SONU BÜLTENİ ({today_str})*\n\n"
+        f"📈 *Piyasa Rüzgarı:*\n{wind_text}\n\n"
+        f"🤖 *Robot Portföy Durumu (10K TL):*\n{portfolio_text}\n\n"
+        f"⭐ *Günün En Yüksek Puanlı Hisseleri:*\n{top_text}\n\n"
+        f"🏷️ *Strateji Sözlüğü & Anlamları:*\n"
+        f"• *SK3*: 3'lü Süper Konsensüs (3+ Algoritma Ortak Onayı)\n"
+        f"• *ÇAO*: Çifte Algo Onayı (2 Strateji Ortak Onayı)\n"
+        f"• *DD*: Dipten Dönüş | *UV*: Uzun Vade | *MMT*: Chartist MM Trend"
+    )
+
+    if _notify(message):
+        state["last_eod_summary_date"] = today_str
+        _save_state(state)
+
+
 def run_once() -> list[dict]:
     try:
-        # The dashboard must remain responsive. The scanner itself refreshes on its
-        # own cache interval; forcing a complete BIST100 network scan here could
-        # lock the first page load for minutes.
         payload = scan_market()
         opportunities = opportunity_snapshot(payload)
         existing = {item["ticker"] for item in opportunities}
@@ -233,13 +288,28 @@ def run_once() -> list[dict]:
             key = f"manual|{item['ticker']}" if item.get("manual") else f"{item['ticker']}|{item['strategy']}|{item['entry'][0]}|{item['entry'][1]}"
             if state.get(item['ticker']) == key:
                 continue
+
+            stock_obj = next((s for s in payload.get("stocks", []) if s.get("ticker") == item["ticker"]), None)
+            badge_info = ""
+            if stock_obj and stock_obj.get("badges"):
+                consensus_badges = [b for b in stock_obj["badges"] if "SK" in b or "ÇAO" in b]
+                if consensus_badges:
+                    badge_info = f"\n🏷️ *KONSENSÜS ROZETİ:* {consensus_badges[0]}"
+
+            is_super = "SK" in badge_info
+            is_double = "ÇAO" in badge_info
+            header = "🚀 *SÜPER KONSENSÜS ALARMI*" if is_super else "🔥 *ÇİFTE ALGO ONAY ALARMI*" if is_double else "⚡ *MODEL FIRSAT ALARMI*"
+
             message = (
-                f"{item['ticker']} · {item.get('analystMessage') or item['strategy']} · puan {item['score']}\n"
-                f"15 dk gecikmeli fiyat: {item['price']}\n"
-                f"Giriş: {item['entry'][0]}–{item['entry'][1]} · Stop: {item['stop']} · "
-                f"TP1: {item['targets'][0]}"
+                f"{header}\n\n"
+                f"📌 *Hisse:* #{item['ticker']}\n"
+                f"⭐ *Model Puanı:* {item['score']}\n"
+                f"💡 *Strateji:* {item.get('analystMessage') or item['strategy']}"
+                f"{badge_info}\n\n"
+                f"💵 *15 Dk Gecikmeli Fiyat:* {item['price']} TL\n"
+                f"🎯 *Giriş Bölgesi:* {item['entry'][0]}–{item['entry'][1]} TL\n"
+                f"🛑 *Stop:* {item['stop']} TL | *TP1:* {item['targets'][0]} TL"
             )
-            # A signal is deduplicated only after the notification is delivered.
             delivered = _notify(message)
             _append_notification_log(item, message, delivered)
             if delivered:
@@ -247,6 +317,10 @@ def run_once() -> list[dict]:
                 changed = True
         if changed:
             _save_state(state)
+
+        # Trigger daily summary if 18:15+ has passed
+        send_daily_summary_bist(payload)
+
         with _status_lock:
             _status.update({"running": True, "lastRun": datetime.now().astimezone().isoformat(timespec="seconds"), "lastError": None, "opportunities": opportunities, "tracking": list(tracks.values()), "notificationsEnabled": bool(os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()), "topic": os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()})
         return opportunities
