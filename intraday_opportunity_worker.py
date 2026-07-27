@@ -219,7 +219,6 @@ def manual_opportunity_snapshot(payload: dict) -> list[dict]:
 
 def send_daily_summary_bist(payload: dict) -> None:
     now_dt = datetime.now().astimezone()
-    # Trigger after 18:15 market close
     if now_dt.hour < 18 or (now_dt.hour == 18 and now_dt.minute < 15):
         return
 
@@ -231,12 +230,23 @@ def send_daily_summary_bist(payload: dict) -> None:
     index_info = payload.get("index", {})
     xu100_price = index_info.get("price", "—")
     xu100_daily = index_info.get("daily", 0.0)
-    wind_text = f"BIST100: {xu100_price} TL (%{xu100_daily:+.2f})"
+
+    index_warning = ""
+    try:
+        p_val = float(xu100_price)
+        if p_val <= 13850:
+            index_warning = "\n⚠️ *DİKKAT:* Endeks 13.850 TL kritik desteğinde! Aşağı düşerse sonraki durak 12.900 – 13.000 TL olabilir. Yükseliş için 14.250 TL üzerine çıkmalı."
+        else:
+            index_warning = f"\nℹ️ *Endeks Durumu:* {p_val:,.2f} TL (13.850 TL kritik destektir; altına düşerse 12.900 TL riski doğar, 14.250 TL üzeri alım teyididir)."
+    except Exception:
+        index_warning = ""
+
+    wind_text = f"BIST100: {xu100_price} TL (%{xu100_daily:+.2f}){index_warning}"
 
     stocks = payload.get("stocks", [])
     top_candidates = sorted(stocks, key=lambda s: s.get("modelScore", 0), reverse=True)[:3]
     top_text = "\n".join([
-        f"  • #{s['ticker']} (Puan: {s['modelScore']}) - Alış: {s['price']} TL | TP1: {s['targets'][0]} TL"
+        f"  • #{s['ticker']} (Puan: {s['modelScore']}) - Fiyat: {s['price']} TL (Hedef TP1: {s['targets'][0]} TL)"
         for s in top_candidates
     ]) if top_candidates else "  • Fırsat hisse bulunamadı"
 
@@ -261,11 +271,11 @@ def send_daily_summary_bist(payload: dict) -> None:
 
     message = (
         f"📊 *BIST100 GÜN SONU BÜLTENİ ({today_str})*\n\n"
-        f"📈 *Piyasa Rüzgarı:*\n{wind_text}\n\n"
+        f"📈 *Piyasa Yönü:*\n{wind_text}\n\n"
         f"🤖 *Robot Portföy Durumu (10K TL):*\n{portfolio_text}\n\n"
         f"⭐ *Günün En Yüksek Puanlı Hisseleri:*\n{top_text}\n\n"
         f"🏷️ *Strateji Sözlüğü & Anlamları:*\n"
-        f"• *SK3*: 3'lü Süper Konsensüs (3+ Algoritma Ortak Onayı)\n"
+        f"• *SK3*: 3'lü Süper Konsensüs (3+ Strateji Ortak Onayı)\n"
         f"• *ÇAO*: Çifte Algo Onayı (2 Strateji Ortak Onayı)\n"
         f"• *DD*: Dipten Dönüş | *UV*: Uzun Vade | *MMT*: Chartist MM Trend"
     )
@@ -304,11 +314,12 @@ def run_once() -> list[dict]:
                 f"{header}\n\n"
                 f"📌 *Hisse:* #{item['ticker']}\n"
                 f"⭐ *Model Puanı:* {item['score']}\n"
-                f"💡 *Strateji:* {item.get('analystMessage') or item['strategy']}"
+                f"💬 *Açıklama:* {item.get('analystMessage') or item['strategy']}"
                 f"{badge_info}\n\n"
-                f"💵 *15 Dk Gecikmeli Fiyat:* {item['price']} TL\n"
-                f"🎯 *Giriş Bölgesi:* {item['entry'][0]}–{item['entry'][1]} TL\n"
-                f"🛑 *Stop:* {item['stop']} TL | *TP1:* {item['targets'][0]} TL"
+                f"💵 *Güncel Fiyat:* {item['price']} TL\n"
+                f"🎯 *Alım Bölgesi:* {item['entry'][0]}–{item['entry'][1]} TL arası\n"
+                f"🛑 *Zarar Kes (Stop):* {item['stop']} TL (Altına düşerse satıp çıkılmalı)\n"
+                f"🚀 *Kâr Hedefi (TP1):* {item['targets'][0]} TL seviyesine hareket edebilir."
             )
             delivered = _notify(message)
             _append_notification_log(item, message, delivered)
@@ -318,7 +329,6 @@ def run_once() -> list[dict]:
         if changed:
             _save_state(state)
 
-        # Trigger daily summary if 18:15+ has passed
         send_daily_summary_bist(payload)
 
         with _status_lock:
