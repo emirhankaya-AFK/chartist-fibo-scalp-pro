@@ -1,0 +1,78 @@
+{
+  "initial_capital": 10000.0,
+  "current_cash": 363.1400000000003,
+  "last_updated_date": "2026-07-27",
+  "positions": [
+    {
+      "ticker": "GESAN",
+      "qty": 24,
+      "entry_price": 80.95,
+      "current_price": 80.95,
+      "entry_date": "2026-07-27",
+      "stop_price": 78.0267,
+      "tp1": 86.3366,
+      "tp2": 89.9276,
+      "tp3": 95.3141,
+      "tp1_hit": false,
+      "cost": 1942.8000000000002,
+      "model_score": 86.0
+    },
+    {
+      "ticker": "AKSA",
+      "qty": 160,
+      "entry_price": 12.44,
+      "current_price": 12.44,
+      "entry_date": "2026-07-27",
+      "stop_price": 11.6354,
+      "tp1": 13.0135,
+      "tp2": 13.5648,
+      "tp3": 14.3916,
+      "tp1_hit": false,
+      "cost": 1990.3999999999999,
+      "model_score": 81.2
+    },
+    {
+      "ticker": "EREGL",
+      "qty": 46,
+      "entry_price": 43.26,
+      "current_price": 43.26,
+      "entry_date": "2026-07-27",
+      "stop_price": 40.3877,
+      "tp1": 47.3072,
+      "tp2": 50.075,
+      "tp3": 54.2267,
+      "tp1_hit": false,
+      "cost": 1989.9599999999998,
+      "model_score": 80.7
+    },
+    {
+      "ticker": "TUPRS",
+      "qty": 6,
+      "entry_price": 292.25,
+      "current_price": 292.25,
+      "entry_date": "2026-07-27",
+      "stop_price": 275.0154,
+      "tp1": 318.1018,
+      "tp2": 335.3364,
+      "tp3": 361.1882,
+      "tp1_hit": false,
+      "cost": 1753.5,
+      "model_score": 80.3
+    },
+    {
+      "ticker": "CCOLA",
+      "qty": 22,
+      "entry_price": 89.1,
+      "current_price": 89.1,
+      "entry_date": "2026-07-27",
+      "stop_price": 83.4273,
+      "tp1": 97.609,
+      "tp2": 103.2817,
+      "tp3": 111.7907,
+      "tp1_hit": false,
+      "cost": 1960.1999999999998,
+      "model_score": 80.2
+    }
+  ],
+  "history": []
+}

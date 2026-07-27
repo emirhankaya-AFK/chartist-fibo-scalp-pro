@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Chartist Fibo-Scalp Pro — resmî BIST kapanışlarıyla teknik karar destek paneli">
+  <title>Chartist Fibo-Scalp Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20260722-4">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="#dashboard" aria-label="Chartist ana sayfa">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 44 44" role="img">
+          <path d="M10 29.5 17.2 22l5.1 4.8L34 14.5" />
+          <path d="M27.5 14.5H34V21" />
+        </svg>
+      </span>
+      <span class="brand-copy">
+        <strong>CHARTIST</strong>
+        <small>FIBO-SCALP PRO</small>
+      </span>
+    </a>
+
+    <nav class="main-nav" aria-label="Ana menü">
+      <a class="nav-link active" href="#dashboard" data-view="dashboard">
+        <span class="nav-icon">⌂</span>
+        <span>Genel Bakış</span>
+      </a>
+      <a class="nav-link" href="#signals" data-view="signals">
+        <span class="nav-icon">⌁</span>
+        <span>Gün Sonu Sinyalleri</span>
+        <span class="nav-count" id="navSignalCount">--</span>
+      </a>
+      <a class="nav-link" href="#strategies" data-view="strategies">
+        <span class="nav-icon">◆</span>
+        <span>Stratejiler</span>
+      </a>
+      <a class="nav-link" href="#fundamental" data-view="fundamental">
+        <span class="nav-icon">◎</span>
+        <span>Isı Haritası</span>
+      </a>
+      <a class="nav-link" href="#analystNotesView" data-view="analyst-notes">
+        <span class="nav-icon">▤</span>
+        <span>Excel Analist Notları</span>
+      </a>
+      <a class="nav-link" href="#notificationsView" data-view="notifications">
+        <span class="nav-icon">♢</span>
+        <span>Telefon Bildirimleri</span>
+        <span class="nav-count" id="navNotificationCount">0</span>
+      </a>
+      <a class="nav-link" href="#autoPortfolioView" data-view="auto-portfolio">
+        <span class="nav-icon">⚡</span>
+        <span>Auto-Trade (10K)</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-label">ARAÇLAR</div>
+    <nav class="main-nav secondary-nav" aria-label="Araçlar">
+      <a class="nav-link" id="officialSourceLink" href="https://borsaistanbul.com/veriler/gunluk-bulten" target="_blank" rel="noreferrer">
+        <span class="nav-icon">✓</span>
+        <span>Resmî Veri Kaynağı</span>
+      </a>
+      <a class="nav-link" href="#model-note">
+        <span class="nav-icon">?</span>
+        <span>Model Notları</span>
+      </a>
+    </nav>
+
+    <div class="signal-legend-card" aria-label="Sinyal sözlüğü">
+      <div class="legend-title">SİNYAL SÖZLÜĞÜ</div>
+      <div class="legend-row"><b>MSS</b><span>Market Structure Shift · piyasa yapısı değişimi</span></div>
+      <div class="legend-row"><b>FVG</b><span>Fair Value Gap · fiyat boşluğu</span></div>
+      <div class="legend-row"><b>EMA 5-8-13</b><span>Kısa vadeli üssel ortalama trend hizası</span></div>
+      <div class="legend-row"><b>LIQ</b><span>Likidite süpürmesi · stop avı sonrası tepki</span></div>
+      <div class="legend-row"><b>VCP</b><span>Volatility Contraction Pattern · daralan volatilite</span></div>
+    </div>
+
+    <div class="market-mini-card">
+      <div class="mini-card-head">
+        <span class="live-pulse"></span>
+        <span id="sidebarDataState">Piyasa verisi yükleniyor</span>
+      </div>
+      <strong id="sidebarMarketState">Durum kontrol ediliyor</strong>
+      <small>Son güncelleme <span id="sidebar-clock">--:--:--</span></small>
+      <div class="latency-row">
+        <span>Veri tipi</span>
+        <b id="sidebarDelay">Gecikmeli</b>
+      </div>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="avatar">EK</div>
+      <div>
+        <strong>Emirkan Kaya</strong>
+        <span>Yerel kullanıcı</span>
+      </div>
+      <button type="button" id="userMenuButton" aria-label="Kullanıcı bilgisi">•••</button>
+    </div>
+  </aside>
+
+  <main class="app-shell">
+    <header class="topbar">
+      <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Menüyü aç">☰</button>
+      <div class="market-marquee" aria-label="Piyasa göstergeleri">
+        <div class="market-marquee-track" id="marketMarqueeTrack">
+          <span class="marquee-item">BIST30 <b>--</b></span>
+          <span class="marquee-item">BIST500 <b>--</b></span>
+          <span class="marquee-item">USD/TRY <b>--</b></span>
+          <span class="marquee-item">EUR/TRY <b>--</b></span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input id="globalSearch" type="search" placeholder="Hisse ara…  THYAO, ASELS" autocomplete="off">
+          <kbd>⌘ K</kbd>
+        </label>
+        <button class="icon-button notification-button" id="notificationButton" type="button" aria-label="Analist alarmlarını göster">
+          <span>♢</span>
+        </button>
+        <button class="primary-button compact wind-btn" id="openMarketWindButton" type="button">
+          <span>🚦</span> Piyasa Rüzgarı
+        </button>
+        <button class="primary-button compact" id="quickPortfolio" type="button">
+          <span>＋</span> Pozisyon Ekle
+        </button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <section class="welcome-row" id="dashboard">
+        <div>
+          <p class="eyebrow" id="dashboardDate">PİYASA VERİSİ YÜKLENİYOR</p>
+          <h1>Piyasa Kontrol Merkezi</h1>
+          <p class="page-subtitle">Resmî kapanış, teknik momentum ve risk planı tek ekranda.</p>
+        </div>
+        <div class="session-state">
+          <span class="session-light"></span>
+          <div>
+            <small>PİYASA DURUMU</small>
+            <strong id="sessionStateText">Kontrol ediliyor</strong>
+          </div>
+          <div class="session-divider"></div>
+          <div>
+            <small id="sessionCountdownLabel">KAPANIŞA KALAN</small>
+            <strong id="sessionCountdown">--:--:--</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="metric-grid" aria-label="Piyasa özeti">
+        <article class="metric-card accent-card">
+          <div class="metric-top">
+            <span class="metric-icon signal-icon">⌁</span>
+            <span class="trend-label neutral" id="signalUniverse">BIST 100</span>
+          </div>
+          <div class="metric-value">
+            <strong id="activeSignalCount">--</strong>
+            <span>Giriş koşulu uygun</span>
+          </div>
+          <div class="metric-foot">
+            <span><i class="dot green"></i> <b id="openSignalCount">--</b> aday</span>
+            <span><i class="dot amber"></i> <b id="watchSignalCount">--</b> izleniyor</span>
+          </div>
+        </article>
+
+        <article class="metric-card">
+          <div class="metric-top">
+            <span class="metric-icon">◈</span>
+            <span class="trend-label neutral">TEKNİK V3 · 9 ALGO</span>
+          </div>
+          <div class="metric-value">
+            <strong id="averagePositionScore">--</strong>
+            <span>Ort. Pozisyon Puanı</span>
+          </div>
+          <div class="progress-track"><span id="averagePositionBar" style="width: 0"></span></div>
+          <div class="metric-foot">
+            <span>Zamanlama dahil model skoru</span>
+            <b>100 üzerinden</b>
+          </div>
+        </article>
+
+        <article class="metric-card">
+          <div class="metric-top">
+            <span class="metric-icon">↗</span>
+            <span class="trend-label neutral" id="portfolioStatus">Kayıt yok</span>
+          </div>
+          <div class="metric-value">
+            <strong id="portfolioPnl">₺0,00</strong>
+            <span>Sanal portföy</span>
+          </div>
+          <div class="metric-foot">
+            <span>Toplam değer</span>
+            <b id="portfolioValue">₺0,00</b>
+          </div>
+        </article>
+
+        <article class="metric-card">
+          <div class="metric-top">
+            <span class="metric-icon">⌖</span>
+            <span class="trend-label neutral" id="backtestMetricStatus">HESAPLANIYOR</span>
+          </div>
+          <div class="metric-value">
+            <strong id="backtestMetricRate">—</strong>
+            <span id="backtestMetricLabel">Pozitif işlem oranı</span>
+          </div>
+          <div class="win-loss-bar">
+            <span class="wins" id="backtestWins" style="width: 0"></span>
+            <span class="losses" id="backtestLosses" style="width: 0"></span>
+          </div>
+          <div class="metric-foot">
+            <span id="backtestMetricTactic">2020–günümüz</span>
+            <span id="backtestMetricTrades">İşlem bekleniyor</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="decision-grid" aria-label="En iyi pozisyon kararı">
+        <article class="panel winner-card">
+          <div class="winner-main">
+            <div class="winner-kicker">
+              <span class="model-live"><i></i> MODEL LİDERİ</span>
+              <button class="score-info" id="scoreInfoButton" type="button">Puan nasıl hesaplanıyor? <span>i</span></button>
+            </div>
+            <div class="winner-identity">
+              <div class="winner-logo" id="winnerLogo">—</div>
+              <div>
+                <div class="winner-title-line">
+                  <h2 id="winnerTicker">TARANIYOR</h2>
+                  <span id="winnerGrade">—</span>
+                  <span id="winnerVerdict">Veri bekleniyor</span>
+                </div>
+                <p id="winnerCompany">Resmî BIST bülteni okunuyor</p>
+              </div>
+            </div>
+            <div class="winner-score-row">
+              <div class="winner-score">
+                <strong id="winnerScore">--</strong>
+                <span>POZİSYON<br>PUANI</span>
+              </div>
+              <div class="winner-confidence">
+                <div><span>Model güveni</span><strong id="winnerConfidence">--</strong></div>
+                <div class="confidence-track"><span id="winnerConfidenceBar" style="width:0"></span></div>
+              </div>
+            </div>
+            <p class="winner-summary" id="winnerSummary">Resmî kapanış doğrulanmadan pozisyon gösterilmez.</p>
+          </div>
+
+          <div class="winner-reasons">
+            <div class="winner-section-title">
+              <span>NEDEN BİRİNCİ?</span>
+              <small id="winnerUpdated">Şimdi güncellendi</small>
+            </div>
+            <div class="reason-list" id="winnerReasons"></div>
+          </div>
+
+          <div class="winner-plan">
+            <div class="winner-section-title">
+              <span>İŞLEM PLANI</span>
+              <span class="plan-model" id="winnerRiskModel">Trend Takip Eden</span>
+            </div>
+            <div class="plan-price">
+              <div><span>Resmî kapanış</span><strong id="winnerPrice">--</strong></div>
+              <div><span>İdeal giriş</span><strong id="winnerEntry">--</strong></div>
+              <div><span>İlk hedef</span><strong id="winnerTarget">--</strong></div>
+              <div><span>Stop</span><strong id="winnerStop" class="negative">--</strong></div>
+            </div>
+            <div class="timing-callout" id="winnerTiming">
+              <span>⌖</span>
+              <p><strong>Yeni giriş için seçici ol.</strong> Fiyat model girişinden uzaklaşmış durumda.</p>
+            </div>
+            <button class="primary-button winner-action" id="winnerPortfolioButton" type="button">
+              Sanal Pozisyonu Planla <span>→</span>
+            </button>
+          </div>
+        </article>
+
+        <article class="panel leaderboard-card">
+          <div class="leaderboard-head">
+            <div>
+              <p class="eyebrow">MODEL SIRALAMASI</p>
+              <h2>En İyi 3 Aday</h2>
+            </div>
+            <span>Tüm sinyallerden</span>
+          </div>
+          <div class="leaderboard-list" id="leaderboardList"></div>
+          <div class="leaderboard-note">
+            <span>!</span>
+            <p>Puan, hissenin kalitesini ve mevcut giriş zamanlamasını birlikte ölçer. En yüksek puan kesin getiri anlamına gelmez.</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="workspace-grid">
+        <article class="panel signals-panel" id="signals">
+          <div class="panel-header">
+            <div>
+              <div class="title-line">
+                <h2>Gün Sonu Sinyalleri</h2>
+                <span class="live-badge" id="signalDataBadge"><i></i> VERİ YÜKLENİYOR</span>
+              </div>
+              <p>Algoritmalar tarafından doğrulanan takip listesi</p>
+            </div>
+            <div class="panel-actions">
+              <button class="ghost-button recommendation-filter" id="openOnlyButton" data-recommendation="OPEN" type="button">2 Aday</button>
+              <button class="ghost-button recommendation-filter" id="watchOnlyButton" data-recommendation="WATCH" type="button">8 İzleniyor</button>
+              <button class="ghost-button" id="filterButton" type="button">☷ Filtreler <span id="activeFilterCount">0</span></button>
+                <button class="ghost-button" id="exportButton" type="button">⇩ CSV İndir</button>
+            </div>
+          </div>
+
+          <div class="strategy-ribbon" id="strategyRibbon" aria-label="Hızlı strateji filtreleri"></div>
+
+          <div class="filter-drawer" id="filterDrawer">
+            <div class="filter-group">
+              <span>Strateji</span>
+              <div class="filter-chips" id="strategyFilters">
+                <button class="filter-chip active" data-strategy="Tümü" type="button">Tümü</button>
+                <button class="filter-chip" data-strategy="TOBO Kırılımı" type="button">TOBO Kırılımı</button>
+                <button class="filter-chip" data-strategy="Dipten Dönüş" type="button">Dipten Dönüş</button>
+                <button class="filter-chip" data-strategy="Derin Dönüş" type="button">Derin Dönüş</button>
+                <button class="filter-chip" data-strategy="Uzun Vade" type="button">Uzun Vade</button>
+                <button class="filter-chip" data-strategy="Momentum Kırılımı" type="button">Momentum Kırılımı</button>
+                <button class="filter-chip" data-strategy="CRSI Scalp" type="button">CRSI Scalp</button>
+                <button class="filter-chip" data-strategy="Chartist MM Trend" type="button">Chartist MM Trend</button>
+                <button class="filter-chip" data-strategy="Wyckoff Spring" type="button">Wyckoff Spring</button>
+                <button class="filter-chip" data-strategy="Money Dip" type="button">Money Dip</button>
+                <button class="filter-chip" data-strategy="Chartist Trender" type="button">Chartist Trender</button>
+                <button class="filter-chip" data-strategy="İzleme" type="button">Tetik Yok</button>
+              </div>
+            </div>
+            <label class="range-filter">
+              <span>Minimum Pozisyon Puanı <b id="masterRangeValue">0</b></span>
+              <input id="masterRange" type="range" min="0" max="95" value="0">
+            </label>
+            <label class="toggle-filter">
+              <input id="smcOnly" type="checkbox">
+              <span class="toggle-ui"></span>
+              <span>Yalnızca SMC onaylı</span>
+            </label>
+            <label class="toggle-filter">
+              <input id="consensusOnly" type="checkbox">
+              <span class="toggle-ui"></span>
+              <span>Yalnızca Konsensüs (ÇAO/SK)</span>
+            </label>
+          </div>
+
+          <div class="table-wrap">
+            <table class="signal-table">
+              <thead>
+                <tr>
+                  <th class="portfolio-col"><span class="sr-only">Portföye ekle</span></th>
+                  <th data-sort="ticker">HİSSE <span class="sort-mark">↕</span></th>
+                  <th data-sort="strategy">STRATEJİ <span class="sort-mark">↕</span></th>
+                  <th data-sort="fundamental">FİNANS <span class="sort-mark">↕</span></th>
+                  <th data-sort="guru">TREND <span class="sort-mark">↕</span></th>
+                  <th>RSI / ADX</th>
+                  <th data-sort="sentiment">MOM. <span class="sort-mark">↕</span></th>
+                  <th data-sort="master" class="master-head">TEKNİK <span class="sort-mark">↕</span></th>
+                  <th data-sort="positionScore" class="position-head">★ POZ. PUAN <span class="sort-mark">↓</span></th>
+                  <th data-sort="confidence" class="confidence-head">MODEL GÜVENİ <span class="sort-mark">↕</span></th>
+                  <th data-sort="price">RESMÎ KAPANIŞ <span class="sort-mark">↕</span></th>
+                  <th>EXCEL DESTEK</th>
+                  <th>EXCEL DİRENÇ</th>
+                  <th data-sort="return">GİRİŞ MESAFE <span class="sort-mark">↕</span></th>
+                  <th>HEDEFLER</th>
+                  <th>STOP</th>
+                  <th><span class="sr-only">Detay</span></th>
+                </tr>
+              </thead>
+              <tbody id="signalTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="table-footer">
+            <span id="tableSummary">Veriler yükleniyor</span>
+            <div class="table-legend">
+              <span><i class="legend-dot strong"></i> Güçlü 70+</span>
+              <span><i class="legend-dot balanced"></i> Dengeli 40–69</span>
+              <span><i class="legend-dot weak"></i> Zayıf 0–39</span>
+            </div>
+          </div>
+        </article>
+
+        <aside class="panel detail-panel" id="detailPanel">
+          <div class="detail-head">
+            <div class="stock-identity">
+              <div class="stock-logo" id="detailLogo">—</div>
+              <div>
+                <div class="stock-name-line">
+                  <h2 id="detailTicker">--</h2>
+                  <span id="detailPeriod">1D</span>
+                </div>
+                <p id="detailCompany">Veri yükleniyor</p>
+              </div>
+            </div>
+            <div class="detail-actions">
+              <button class="plan-open-button" id="planOpenButton" type="button" aria-label="Hedef ve risk planını büyüt">Planı Aç</button>
+              <button class="watch-button" id="watchButton" type="button" aria-label="Takip listesine ekle">☆</button>
+            </div>
+          </div>
+
+          <div class="detail-price-row">
+            <div>
+              <strong id="detailPrice">--</strong>
+              <span id="detailDaily">--</span>
+            </div>
+            <div class="master-orbit" id="masterOrbit">
+              <svg viewBox="0 0 84 84" aria-hidden="true">
+                <circle class="orbit-bg" cx="42" cy="42" r="35"></circle>
+                <circle class="orbit-value" cx="42" cy="42" r="35"></circle>
+              </svg>
+              <div>
+                <strong id="detailMaster">--</strong>
+                <small>POZİSYON</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="stock-chart-wrap">
+            <div class="chart-toolbar">
+              <div>
+                <button type="button" data-chart-range="1G">1G</button>
+                <button class="active" type="button" data-chart-range="1H">1H</button>
+                <button type="button" data-chart-range="1A">1A</button>
+                <button type="button" data-chart-range="3A">3A</button>
+              </div>
+              <span id="chartSourceLabel"><i></i> Son 5 seans</span>
+            </div>
+            <svg class="stock-chart" id="stockChart" viewBox="0 0 420 170" preserveAspectRatio="none" aria-label="Seçili hissenin fiyat grafiği">
+              <defs>
+                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#28d7a1" stop-opacity=".25"/>
+                  <stop offset="100%" stop-color="#28d7a1" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <g class="grid-lines">
+                <line x1="0" y1="32" x2="420" y2="32"></line>
+                <line x1="0" y1="78" x2="420" y2="78"></line>
+                <line x1="0" y1="124" x2="420" y2="124"></line>
+              </g>
+              <path id="chartArea" class="chart-area" d=""></path>
+              <path id="chartLine" class="chart-line" d=""></path>
+              <circle id="chartPoint" class="chart-point" cx="414" cy="40" r="4"></circle>
+              <line id="entryLine" class="entry-line" x1="0" y1="108" x2="420" y2="108"></line>
+              <text id="entryLabel" class="entry-label" x="8" y="103">Giriş --</text>
+            </svg>
+            <div class="chart-period-stats" aria-live="polite">
+              <div>
+                <span id="chartPeriodLabel">1 hafta değişim</span>
+                <strong id="chartPeriodReturn">—</strong>
+              </div>
+              <div>
+                <span>Başlangıç → son</span>
+                <strong id="chartPeriodCompare">—</strong>
+                <small id="chartPeriodDifference">—</small>
+              </div>
+              <div>
+                <span>Dönem aralığı</span>
+                <strong id="chartPeriodRange">—</strong>
+                <small>en düşük → en yüksek</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="smc-badges" id="detailBadges"></div>
+          <div class="analyst-notes" id="analystNotes" aria-live="polite"></div>
+
+          <div class="target-section">
+            <div class="section-title">
+              <h3>Hedef & Risk Planı</h3>
+              <span id="riskModel">Trend Takip Eden</span>
+            </div>
+            <div class="target-rail">
+              <div class="rail-line"><span id="railProgress"></span></div>
+              <div class="rail-point entry reached">
+                <i></i>
+                <small>GİRİŞ</small>
+                <strong id="targetEntry">--</strong>
+              </div>
+              <div class="rail-point">
+                <i></i>
+                <small>TP1</small>
+                <strong id="targetTp1">--</strong>
+              </div>
+              <div class="rail-point">
+                <i></i>
+                <small>TP2</small>
+                <strong id="targetTp2">--</strong>
+              </div>
+              <div class="rail-point">
+                <i></i>
+                <small>TP3</small>
+                <strong id="targetTp3">--</strong>
+              </div>
+            </div>
+            <div class="risk-stats">
+              <div><span>Stop</span><strong id="detailStop">--</strong></div>
+              <div><span>R / R</span><strong id="detailRR" class="positive">--</strong></div>
+              <div><span>Karar</span><strong id="detailPosition">--</strong></div>
+            </div>
+          </div>
+
+          <div class="scorecard-section">
+            <div class="section-title">
+              <h3>Teknik Scorecard</h3>
+              <button type="button" id="scorecardToggle">Açıklamaları gör →</button>
+            </div>
+            <div class="score-bars" id="detailScoreBars"></div>
+            <div class="scorecard-explanation" id="scorecardExplanation" hidden></div>
+            <button type="button" class="secondary-button backtest-button" id="backtestButton">2020’den beri taktik geçmişini getir</button>
+            <div class="backtest-result" id="backtestResult" aria-live="polite">Backtest sonucu henüz yüklenmedi.</div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="lower-grid">
+        <article class="panel strategies-panel" id="strategies">
+          <div class="panel-header">
+            <div>
+              <h2>Strateji Radarı</h2>
+              <p>Aktif algoritmaların bugünkü sinyal dağılımı</p>
+            </div>
+          </div>
+          <div class="strategy-cards" id="strategyCards">
+            <button class="strategy-card" type="button" data-strategy-filter="Dipten Dönüş">
+              <span class="strategy-number">01</span>
+              <span class="strategy-symbol cyan">↗</span>
+              <strong>Dipten Dönüş</strong>
+              <small>SMI kesişimi · RSI · CCI</small>
+              <span class="strategy-count">--</span>
+            </button>
+            <button class="strategy-card" type="button" data-strategy-filter="Derin Dönüş">
+              <span class="strategy-number">02</span>
+              <span class="strategy-symbol purple">⌄</span>
+              <strong>Derin Dönüş</strong>
+              <small>SMI · Stokastik · hacim</small>
+              <span class="strategy-count">--</span>
+            </button>
+            <button class="strategy-card" type="button" data-strategy-filter="Uzun Vade">
+              <span class="strategy-number">03</span>
+              <span class="strategy-symbol green">⌁</span>
+              <strong>Uzun Vade</strong>
+              <small>SMA200 · ana trend · ADX</small>
+              <span class="strategy-count">--</span>
+            </button>
+            <button class="strategy-card" type="button" data-strategy-filter="Momentum Kırılımı">
+              <span class="strategy-number">04</span>
+              <span class="strategy-symbol amber">ϟ</span>
+              <strong>Momentum Kırılımı</strong>
+              <small>20G kırılım · hacim · MACD</small>
+              <span class="strategy-count">--</span>
+            </button>
+            <button class="strategy-card" type="button" data-strategy-filter="CRSI Scalp">
+              <span class="strategy-number">05</span>
+              <span class="strategy-symbol rose">⌄</span>
+              <strong>CRSI Scalp</strong>
+              <small>Connors RSI · tepki dönüşü</small>
+              <span class="strategy-count">--</span>
+            </button>
+            <button class="strategy-card" type="button" data-strategy-filter="Chartist MM Trend">
+              <span class="strategy-number">06</span>
+              <span class="strategy-symbol green">♛</span>
+              <strong>Chartist MM Trend</strong>
+              <small>ADX · göreli güç · VCP</small>
+              <span class="strategy-count">--</span>
+            </button>
+            <button class="strategy-card" type="button" data-strategy-filter="Wyckoff Spring">
+              <span class="strategy-number">07</span>
+              <span class="strategy-symbol cyan">◈</span>
+              <strong>Wyckoff Spring</strong>
+              <small>Likidite süpürmesi · geri alım</small>
+              <span class="strategy-count">--</span>
+            </button>
+            <button class="strategy-card" type="button" data-strategy-filter="Money Dip">
+              <span class="strategy-number">08</span>
+              <span class="strategy-symbol amber">₺</span>
+              <strong>Money Dip</strong>
+              <small>MFI/hacim vekili · fiyat düşüşü</small>
+              <span class="strategy-count">--</span>
+            </button>
+            <button class="strategy-card" type="button" data-strategy-filter="Chartist Trender">
+              <span class="strategy-number">09</span>
+              <span class="strategy-symbol green">🚀</span>
+              <strong>Chartist Trender</strong>
+              <small>Trend · pullback · yeniden ivme</small>
+              <span class="strategy-count">--</span>
+            </button>
+          </div>
+        </article>
+
+        <article class="panel heatmap-panel" id="fundamental">
+          <div class="panel-header">
+            <div>
+              <h2>Piyasa Isı Haritası</h2>
+              <p>Sektör bazında günlük performans</p>
+            </div>
+          </div>
+          <div class="heatmap" id="sectorHeatmap">
+            <div class="heat-cell heat-flat" style="--size: 1">
+              <strong>YÜKLENİYOR</strong><span>--</span><small>Resmî kapanış bekleniyor</small>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel analyst-panel" id="analystBenchmark">
+        <div class="panel-header"><div><h2>Analist Alarm Geçmişi</h2><p>Oğuz, Ahmet Mergen ve diğer kaynakların seviyeleri; Chartist sinyalinden ayrı gösterilir.</p></div><span class="status-pill" id="analystSummary">YÜKLENİYOR</span></div>
+        <div class="analyst-table-wrap"><table class="analyst-table"><thead><tr><th>Kaynak</th><th>Hisse</th><th>Rol</th><th>Seviye</th><th>Brüt değişim</th><th>Durum</th><th>Açıklama</th></tr></thead><tbody id="analystRows"><tr><td colspan="7">Alarm geçmişi yükleniyor…</td></tr></tbody></table></div>
+        <p class="muted-note">Brüt değişim, yalnızca kaynakta alış fiyatı kayıtlıysa alarmın tetiklendiği fiyata göre hesaplanır; kesinleşmiş satış getirisi değildir.</p>
+      </section>
+
+      <section class="auxiliary-grid">
+        <article class="panel analyst-panel" id="analystNotesView">
+          <div class="panel-header">
+            <div><h2>Excel Analist Notları</h2><p>Hangi analist hangi hisse için hangi seviyeyi yazmış?</p></div>
+            <span class="status-pill" id="excelNotesSummary">YÜKLENİYOR</span>
+          </div>
+          <div class="notes-toolbar">
+            <input id="analystNotesSearch" type="search" placeholder="Hisse, analist veya not ara…" autocomplete="off">
+            <select id="analystSourceFilter" aria-label="Analist kaynağı"><option value="ALL">Tüm kaynaklar</option></select>
+          </div>
+          <div class="analyst-table-wrap"><table class="analyst-table"><thead><tr><th>Hisse</th><th>Kaynak</th><th>Destek</th><th>Direnç</th><th>Hedef</th><th>Talimat / Not</th></tr></thead><tbody id="excelNotesRows"><tr><td colspan="6">Excel notları yükleniyor…</td></tr></tbody></table></div>
+        </article>
+
+        <article class="panel analyst-panel" id="notificationsView">
+          <div class="panel-header">
+            <div><h2>Bildirim Merkezi</h2><p>Hedef, stop ve telefona gerçekten iletilen işlem kayıtları.</p></div>
+            <button class="secondary-button notification-refresh" id="notificationRefresh" type="button">Yenile</button>
+          </div>
+          <div class="notification-status" id="notificationStatus">Bildirim durumu kontrol ediliyor…</div>
+          <div class="tracking-title">İşlem olayları</div>
+          <div class="trade-event-list" id="tradeEventList"><p class="muted-note">Hedef ve stop olayları yükleniyor…</p></div>
+          <div class="tracking-title">Takip edilen fiyatlar</div>
+          <div class="tracking-list" id="trackingList"><p class="muted-note">Takip kaydı yükleniyor…</p></div>
+          <div class="tracking-title">Telefon geçmişi</div>
+          <div class="notification-list" id="notificationList"><p class="muted-note">Telefon geçmişi yükleniyor…</p></div>
+        </article>
+      </section>
+
+      <section class="panel auto-portfolio-panel" id="autoPortfolioView">
+        <div class="panel-header">
+          <div>
+            <h2>Auto-Trade Robot Portföyü (10K TL Başlangıç)</h2>
+            <p>Model puanı 80 ve üzeri olan hisselere otomatik sanal yatırım yapar. TP1'de adedin yarısını, TP2'de kalan yarısını satarak kâr alır, stop seviyesinde ise nakde döner.</p>
+          </div>
+          <button class="secondary-button" id="autoPortfolioReset" type="button">↻ Portföyü Sıfırla (10K)</button>
+        </div>
+
+        <div class="stats-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px;">
+          <div class="stat-card" style="padding: 10px 14px; border: 1px solid rgba(89, 123, 142, .22); border-radius: 8px; background: rgba(15, 28, 43, .5);">
+            <span style="display: block; font-size: 8px; color: #859aab; text-transform: uppercase;">Başlangıç</span>
+            <strong style="display: block; font-size: 14px; color: #ecf5f3; margin-top: 4px;">10.000,00 ₺</strong>
+          </div>
+          <div class="stat-card" style="padding: 10px 14px; border: 1px solid rgba(89, 123, 142, .22); border-radius: 8px; background: rgba(15, 28, 43, .5);">
+            <span style="display: block; font-size: 8px; color: #859aab; text-transform: uppercase;">Toplam Bakiye</span>
+            <strong id="autoTotalBalance" style="display: block; font-size: 14px; color: #ecf5f3; margin-top: 4px;">—</strong>
+          </div>
+          <div class="stat-card" style="padding: 10px 14px; border: 1px solid rgba(89, 123, 142, .22); border-radius: 8px; background: rgba(15, 28, 43, .5);">
+            <span style="display: block; font-size: 8px; color: #859aab; text-transform: uppercase;">Boştaki Nakit</span>
+            <strong id="autoCash" style="display: block; font-size: 14px; color: #ecf5f3; margin-top: 4px;">—</strong>
+          </div>
+          <div class="stat-card" style="padding: 10px 14px; border: 1px solid rgba(89, 123, 142, .22); border-radius: 8px; background: rgba(15, 28, 43, .5);">
+            <span style="display: block; font-size: 8px; color: #859aab; text-transform: uppercase;">Hissedeki Değer</span>
+            <strong id="autoEquityValue" style="display: block; font-size: 14px; color: #ecf5f3; margin-top: 4px;">—</strong>
+          </div>
+          <div class="stat-card" style="padding: 10px 14px; border: 1px solid rgba(89, 123, 142, .22); border-radius: 8px; background: rgba(15, 28, 43, .5);">
+            <span style="display: block; font-size: 8px; color: #859aab; text-transform: uppercase;">Net Kar/Zarar</span>
+            <strong id="autoNetPnl" style="display: block; font-size: 14px; color: #ecf5f3; margin-top: 4px;">—</strong>
+          </div>
+          <div class="stat-card" style="padding: 10px 14px; border: 1px solid rgba(89, 123, 142, .22); border-radius: 8px; background: rgba(15, 28, 43, .5);">
+            <span style="display: block; font-size: 8px; color: #859aab; text-transform: uppercase;">Başarı Oranı</span>
+            <strong id="autoWinRate" style="display: block; font-size: 14px; color: #ecf5f3; margin-top: 4px;">—</strong>
+          </div>
+        </div>
+
+        <div class="tracking-title" style="font-size: 11px; font-weight: 700; color: #859aab; text-transform: uppercase; margin: 15px 0 8px 0; border-left: 2px solid var(--cyan); padding-left: 6px;">Aktif Pozisyonlar</div>
+        <div class="analyst-table-wrap">
+          <table class="analyst-table">
+            <thead>
+              <tr>
+                <th>HİSSE</th>
+                <th>GİRİŞ TARİHİ</th>
+                <th>GİRİŞ FİYATI</th>
+                <th>GÜNCEL FİYAT</th>
+                <th>MİKTAR (LOT)</th>
+                <th>MALİYET (TL)</th>
+                <th>GÜNCEL DEĞER</th>
+                <th>GÜNCEL K/Z</th>
+                <th>STOP SEVİYESİ</th>
+                <th>HEDEFLER (TP1/TP2)</th>
+                <th>PUAN</th>
+              </tr>
+            </thead>
+            <tbody id="autoActivePositionsRows">
+              <tr><td colspan="11">Aktif pozisyon bulunmamaktadır.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tracking-title" style="font-size: 11px; font-weight: 700; color: #859aab; text-transform: uppercase; margin: 25px 0 8px 0; border-left: 2px solid var(--cyan); padding-left: 6px;">İşlem Geçmişi (Gerçekleşenler)</div>
+        <div class="analyst-table-wrap">
+          <table class="analyst-table">
+            <thead>
+              <tr>
+                <th>HİSSE</th>
+                <th>GİRİŞ TARİHİ</th>
+                <th>ÇIKIŞ TARİHİ</th>
+                <th>GİRİŞ FİYATI</th>
+                <th>ÇIKIŞ FİYATI</th>
+                <th>MİKTAR</th>
+                <th>K/Z (TL)</th>
+                <th>GETİRİ %</th>
+                <th>SONUÇ</th>
+              </tr>
+            </thead>
+            <tbody id="autoClosedTradesRows">
+              <tr><td colspan="9">Gerçekleşen işlem kaydı bulunmamaktadır.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="disclaimer" id="model-note">
+        <span>i</span>
+        <p><strong>Karar destek sistemi:</strong> Fiyatlar Borsa İstanbul günlük bülteninden, gösterge tarihçesi Yahoo Finance'tan gelir. Finansal/KAP puanı doğrulanana kadar modele dahil edilmez. Sinyaller yatırım tavsiyesi değildir.</p>
+      </section>
+    </div>
+  </main>
+
+  <div class="modal-backdrop plan-modal-backdrop" id="planModal" aria-hidden="true">
+    <section class="modal plan-modal" role="dialog" aria-modal="true" aria-labelledby="planModalTitle">
+      <button class="modal-close" id="planModalClose" type="button" aria-label="Planı kapat">×</button>
+      <span class="plan-modal-eyebrow">SEÇİLİ HİSSE · 15 DK GECİKMELİ GÖSTERİM</span>
+      <div class="plan-modal-title"><div class="stock-logo" id="planTickerLogo">—</div><div><h2 id="planModalTitle">—</h2><p id="planModalCompany">—</p></div></div>
+      <div class="plan-modal-price"><span>Güncel fiyat</span><strong id="planCurrentPrice">—</strong><small id="planDailyChange">—</small></div>
+      <div class="plan-large-grid">
+        <div><span>Giriş bölgesi</span><strong id="planEntry">—</strong><small id="planEntryMessage">—</small></div>
+        <div><span>Stop</span><strong class="negative" id="planStop">—</strong><small id="planRisk">—</small></div>
+        <div><span>TP1</span><strong class="positive" id="planTp1">—</strong><small id="planTp1Gain">—</small></div>
+        <div><span>TP2</span><strong class="positive" id="planTp2">—</strong><small id="planTp2Gain">—</small></div>
+        <div><span>TP3</span><strong class="positive" id="planTp3">—</strong><small id="planTp3Gain">—</small></div>
+        <div><span>Risk / getiri</span><strong id="planRr">—</strong><small id="planVerdict">—</small></div>
+      </div>
+      <p class="plan-modal-note" id="planModalNote">—</p>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="tradeEventModal" aria-hidden="true">
+    <section class="modal trade-event-modal" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle">
+      <button class="modal-close" id="eventModalClose" type="button" aria-label="Pencereyi kapat">×</button>
+      
+      <div class="event-modal-icon-wrap" id="eventModalIcon">🎯</div>
+      <h2 class="event-modal-title" id="eventModalTitle">TP1 HEDEFİ GÖRÜLDÜ!</h2>
+      <p class="event-modal-subtitle" id="eventModalSubtitle">Sinyal hedef güncellemesi</p>
+
+      <div class="event-action-box" id="eventActionBox">
+        📢 🛡 Maliyet / Stop seviyenizi giriş fiyatına çekiniz.
+      </div>
+
+      <div class="event-details-card">
+        <div class="event-modal-badge" id="eventModalStrategy">🎯 ALGORİTMA / STRATEJİ: Chartist Dipten Dönüş</div>
+
+        <div class="event-info-grid">
+          <div><span>HİSSE KODU</span><strong id="eventModalTicker" class="cyan">--</strong></div>
+          <div><span>PERİYOT</span><strong>1D</strong></div>
+          <div><span>GİRİŞ FİYATI</span><strong id="eventModalEntry">-- TL</strong></div>
+          <div><span>HEDEF FİYATI</span><strong id="eventModalTarget" class="positive">-- TL</strong></div>
+        </div>
+
+        <div class="event-info-list">
+          <div><span>SİNYAL GELİŞ TARİHİ</span><strong id="eventModalSignalDate">--</strong></div>
+          <div><span>GERÇEKLEŞME TARİHİ</span><strong id="eventModalRealizedDate">--</strong></div>
+          <div><span>GERÇEKLEŞME SÜRESİ (GEÇEN SÜRE)</span><strong id="eventModalElapsed" class="positive">⏱ --</strong></div>
+          <div><span>GERÇEKLEŞEN KÂR ORANI</span><strong id="eventModalReturn" class="positive">--%</strong></div>
+          <div><span>🚀 GÖRÜLEN MAKSİMUM KÂR & FİYAT</span><strong id="eventModalMax" class="positive">--</strong></div>
+        </div>
+      </div>
+
+      <div class="event-modal-buttons">
+        <button class="event-btn-close" id="eventModalDismiss" type="button">KAPAT / ANLADIM</button>
+        <button class="event-btn-analyze" id="eventModalAnalyze" type="button">🔍 HİSSE ANALİZİNE GİT</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="marketWindModal" aria-hidden="true">
+    <section class="modal wind-modal" role="dialog" aria-modal="true" aria-labelledby="windModalTitle">
+      <button class="modal-close" id="windModalClose" type="button" aria-label="Pencereyi kapat">×</button>
+      
+      <div class="wind-header">
+        <span class="wind-header-icon">🚦</span>
+        <div>
+          <h2 id="windModalTitle">XU100 Piyasa Rüzgarı Analiz Raporu</h2>
+          <p class="modal-description">BIST 100 endeksi verileri üzerinden Chartist İş Zekası modeli tarafından üretilen teknik değerlendirme.</p>
+        </div>
+      </div>
+
+      <div class="wind-top-cards">
+        <div class="wind-card">
+          <span>ENDEKS KAPANİŞ</span>
+          <strong id="windIndexClose">--</strong>
+          <small id="windIndexChange" class="negative">--%</small>
+        </div>
+        <div class="wind-card">
+          <span>50 GÜNLÜK EMA</span>
+          <strong id="windEma50">--</strong>
+          <small id="windEma50Dist" class="negative">Mesafe: --%</small>
+        </div>
+        <div class="wind-card">
+          <span>200 GÜNLÜK EMA</span>
+          <strong id="windEma200">--</strong>
+          <small id="windEma200Dist" class="positive">Mesafe: --%</small>
+        </div>
+      </div>
+
+      <div class="wind-status-bar">
+        <div class="wind-status-title">
+          <span>📈 Trend Durumu:</span>
+          <strong id="windTrendStatus">Hesaplanıyor...</strong>
+        </div>
+        <p id="windTrendSummary">BIST 100 Endeksi 45 İndikatörlü Konsensüs Analizi yükleniyor.</p>
+      </div>
+
+      <div class="wind-breakdown-head">
+        <div class="wind-breakdown-title">
+          <span>📊 45 İNDİKATÖR KONSENSÜS DÖKÜMÜ</span>
+          <span class="wind-counts-badge" id="windCountsBadge">--</span>
+        </div>
+      </div>
+
+      <div class="wind-grid-container">
+        <div class="wind-grid" id="windIndicatorGrid"></div>
+      </div>
+
+      <div class="wind-modal-footer">
+        <button class="ghost-button" id="windModalFooterClose" type="button">Kapat</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="portfolioModal" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" type="button" aria-label="Pencereyi kapat">×</button>
+      <div class="modal-icon">◫</div>
+      <p class="eyebrow">SANAL PORTFÖY</p>
+      <h2 id="modalTitle">Pozisyon Oluştur</h2>
+      <p class="modal-description"><strong id="modalTicker">ASELS</strong> hissesini takip etmek için sanal pozisyon detaylarını belirleyin.</p>
+
+      <div class="modal-stock-strip">
+        <div>
+          <span>Güncel fiyat</span>
+          <strong id="modalPrice">--</strong>
+        </div>
+        <div>
+          <span>Pozisyon puanı</span>
+          <strong id="modalMaster" class="positive">--</strong>
+        </div>
+        <div>
+          <span>Risk modeli</span>
+          <strong id="modalRisk">--</strong>
+        </div>
+      </div>
+
+      <label class="field-label" for="capitalInput">Ayrılacak sermaye</label>
+      <div class="money-input">
+        <span>₺</span>
+        <input id="capitalInput" type="number" min="100" step="100" value="10000">
+        <small>TRY</small>
+      </div>
+      <div class="capital-presets">
+        <button type="button" data-capital="5000">₺5.000</button>
+        <button class="active" type="button" data-capital="10000">₺10.000</button>
+        <button type="button" data-capital="25000">₺25.000</button>
+        <button type="button" data-capital="50000">₺50.000</button>
+      </div>
+
+      <div class="order-summary">
+        <div><span>Tahmini lot</span><strong id="estimatedLots">--</strong></div>
+        <div><span>Kullanılan tutar</span><strong id="usedCapital">--</strong></div>
+        <div><span>Maksimum risk</span><strong id="maxRisk" class="negative">--</strong></div>
+      </div>
+
+      <button class="primary-button modal-submit" id="modalSubmit" type="button">Sanal Portföye Ekle <span>→</span></button>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <span class="toast-icon">✓</span>
+    <div><strong>Pozisyon eklendi</strong><small>Sanal portföyünüz güncellendi.</small></div>
+  </div>
+
+  <script src="app.js?v=20260723-7"></script>
+</body>
+</html>
