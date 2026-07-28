@@ -222,11 +222,23 @@ def api_auto_portfolio_reset():
         return jsonify({"status": "error", "message": str(exc)}), 503
 
 
-if _worker_enabled:
-    threading.Thread(target=_opportunity_loop, name="opportunity-worker", daemon=True).start()
-    threading.Thread(target=_keep_alive_loop, name="keep-alive-worker", daemon=True).start()
+_threads_started = False
+
+def _ensure_threads():
+    global _threads_started
+    if _threads_started:
+        return
+    _threads_started = True
+    if _worker_enabled:
+        threading.Thread(target=_opportunity_loop, name="opportunity-worker", daemon=True).start()
+        threading.Thread(target=_keep_alive_loop, name="keep-alive-worker", daemon=True).start()
+
+
+@app.before_request
+def _before_request_hook():
+    _ensure_threads()
 
 
 if __name__ == "__main__":
+    _ensure_threads()
     app.run(host="127.0.0.1", port=8080, debug=False)
-
