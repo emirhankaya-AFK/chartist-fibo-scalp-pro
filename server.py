@@ -165,7 +165,7 @@ def api_worker_toggle():
 
 
 def _opportunity_loop():
-    interval = max(60, int(os.getenv("OPPORTUNITY_INTERVAL_SECONDS", "900")))
+    interval = max(60, int(os.getenv("OPPORTUNITY_INTERVAL_SECONDS", "300")))
     while True:
         if _worker_enabled:
             try:
@@ -173,6 +173,21 @@ def _opportunity_loop():
             except Exception:
                 pass
         time.sleep(interval)
+
+
+def _keep_alive_loop():
+    """Internal keep-alive self pinger to ensure Flask process remains active."""
+    import urllib.request
+    port = os.getenv("PORT", "8080")
+    url = f"http://127.0.0.1:{port}/api/auto-portfolio"
+    while True:
+        time.sleep(240)  # Ping every 4 minutes
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "KeepAlivePinger/1.0"})
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+        except Exception:
+            pass
 
 
 @app.get("/api/backtest/<ticker>")
@@ -209,6 +224,7 @@ def api_auto_portfolio_reset():
 
 if _worker_enabled:
     threading.Thread(target=_opportunity_loop, name="opportunity-worker", daemon=True).start()
+    threading.Thread(target=_keep_alive_loop, name="keep-alive-worker", daemon=True).start()
 
 
 if __name__ == "__main__":
