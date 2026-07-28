@@ -20,6 +20,8 @@ STATE_PATH = Path(__file__).with_name("intraday_alert_state.json")
 NOTIFICATION_LOG_PATH = Path(__file__).with_name("notification_log.json")
 TRACKING_LOG_PATH = Path(__file__).with_name("tracking_log.json")
 MANUAL_TRACKING_PATH = Path(__file__).with_name("manual_tracking.json")
+OGUZ_ARSIV_PATH = Path(__file__).with_name("OGUZ_ANALIZ_ARSIVI.json")
+EXCEL_PATH = Path(__file__).with_name("Hisselerin_Teknik_Verileri.xlsx")
 DEFAULT_NTFY_TOPIC = "emirkan_bist_alarm"
 _status_lock = Lock()
 _status = {
@@ -217,6 +219,208 @@ def manual_opportunity_snapshot(payload: dict) -> list[dict]:
     return rows
 
 
+def _load_analyst_levels() -> list[dict]:
+    """Load analyst support/resistance/entry levels from Excel and OGUZ_ANALIZ_ARSIVI.json."""
+    levels = []
+
+    # 1. Load from OGUZ_ANALIZ_ARSIVI.json
+    try:
+        if OGUZ_ARSIV_PATH.exists():
+            rows = json.loads(OGUZ_ARSIV_PATH.read_text(encoding="utf-8"))
+            for row in rows:
+                ticker = row.get("ticker", "").upper().strip()
+                if not ticker:
+                    continue
+                entry = row.get("entry_level")
+                note = row.get("note", "")
+                source = "Oğuz Çelik" if "Oğuz" in note else "Analist"
+                if entry:
+                    levels.append({"ticker": ticker, "source": source, "entry": float(entry), "support": None, "resistance": None, "note": note})
+    except Exception:
+        pass
+
+    # 2. Load from Excel
+    try:
+        if EXCEL_PATH.exists():
+            import openpyxl
+            wb = openpyxl.load_workbook(EXCEL_PATH, read_only=True, data_only=True)
+            ws = wb.active
+            for r in range(4, ws.max_row + 1):
+                ticker = ws.cell(row=r, column=2).value
+                if not ticker:
+                    continue
+                ticker = str(ticker).upper().strip()
+                name = ws.cell(row=r, column=3).value or ""
+                entry = ws.cell(row=r, column=4).value
+                support_raw = ws.cell(row=r, column=5).value
+                resistance_raw = ws.cell(row=r, column=6).value
+                note = ws.cell(row=r, column=8).value or ""
+
+                source = "Oğuz Çelik" if "Oğuz" in note else "Ahmet Mergen" if "Mergen" in note else "Analist"
+
+                # Parse support/resistance (may be strings like "1.34 - 1.35 TL")
+                support_val = None
+                resistance_val = None
+                try:
+                    if support_raw:
+                        s = str(support_raw).replace("TL", "").replace(",", ".").strip()
+                        parts = [p.strip() for p in s.split("-") if p.strip()]
+                        support_val = float(parts[0]) if parts else None
+                except Exception:
+                    pass
+                try:
+                    if resistance_raw:
+                        s = str(resistance_raw).replace("TL", "").replace(",", ".").strip()
+                        parts = [p.strip() for p in s.split("-") if p.strip()]
+                        resistance_val = float(parts[-1]) if parts else None
+                except Exception:
+                    pass
+
+                # Only add if we don't already have this ticker from OGUZ or if Excel has extra data
+                existing_tickers = {l["ticker"] for l in levels}
+                if ticker not in existing_tickers:
+                    levels.append({"ticker": ticker, "source": source, "entry": float(entry) if entry else None, "support": support_val, "resistance": resistance_val, "note": note, "name": name})
+                else:
+                    # Merge Excel support/resistance into existing
+                    for l in levels:
+                        if l["ticker"] == ticker:
+                            if support_val and not l.get("support"):
+                                l["support"] = support_val
+                            if resistance_val and not l.get("resistance"):
+                                l["resistance"] = resistance_val
+                            if note and "Mergen" in note and "Mergen" not in (l.get("note") or ""):
+                                l["note"] = l.get("note", "") + " | " + note
+                            break
+            wb.close()
+    except Exception:
+        pass
+
+    return levels
+
+
+def check_analyst_level_alerts(payload: dict) -> None:
+    """Check if any stock price is near analyst support/resistance/entry levels and send detailed alerts."""
+    analyst_levels = _load_analyst_levels()
+    if not analyst_levels:
+        return
+
+    state = _load_state()
+    today_str = datetime.now().astimezone().strftime("%Y-%m-%d")
+    changed = False
+
+    stocks_map = {}
+    for s in payload.get("stocks", []):
+        quote = s.get("delayedQuote") or {}
+        price = quote.get("price") or s.get("price")
+        if price:
+            stocks_map[s["ticker"]] = {"price": float(price), "stock": s}
+
+    for level in analyst_levels:
+        ticker = level["ticker"]
+        if ticker not in stocks_map:
+            continue
+
+        price = stocks_map[ticker]["price"]
+        stock = stocks_map[ticker]["stock"]
+        entry = level.get("entry")
+        support = level.get("support")
+        resistance = level.get("resistance")
+        note = level.get("note") or ""
+        source = level.get("source", "Analist")
+        name = level.get("name") or stock.get("name") or ticker
+
+        # Proximity threshold: within 2% of a key level
+        threshold = 0.02
+        alerts = []
+
+        if entry and abs(price - entry) / entry <= threshold:
+            direction = "📗 Giriş seviyesinin TAM ÜZERİNDE" if price >= entry else "📕 Giriş seviyesinin ALTINA düştü"
+            diff_pct = round((price / entry - 1) * 100, 2)
+            alerts.append({
+                "type": "GİRİŞ SEVİYESİ",
+                "level": entry,
+                "direction": direction,
+                "diff_pct": diff_pct,
+                "emoji": "🎯"
+            })
+
+        if support and price <= support * (1 + threshold):
+            diff_pct = round((price / support - 1) * 100, 2)
+            if diff_pct <= 2:
+                direction = "🟢 Destek seviyesinde TUTUNUYOR" if price >= support else "🔴 Destek seviyesi KIRILDI!"
+                alerts.append({
+                    "type": "DESTEK SEVİYESİ",
+                    "level": support,
+                    "direction": direction,
+                    "diff_pct": diff_pct,
+                    "emoji": "🛡️"
+                })
+
+        if resistance and price >= resistance * (1 - threshold):
+            diff_pct = round((price / resistance - 1) * 100, 2)
+            if diff_pct >= -2:
+                direction = "🟢 Direnç seviyesi KIRILDI! Yukarı yön açıldı" if price >= resistance else "🟡 Direnç seviyesine YAKIN, satıcı gelebilir"
+                alerts.append({
+                    "type": "DİRENÇ SEVİYESİ",
+                    "level": resistance,
+                    "direction": direction,
+                    "diff_pct": diff_pct,
+                    "emoji": "🧱"
+                })
+
+        for alert in alerts:
+            alert_key = f"analyst_{ticker}_{alert['type']}_{today_str}"
+            if state.get(alert_key):
+                continue
+
+            # Build a super detailed message
+            model_score = stock.get("modelScore", "—")
+            targets = stock.get("targets") or [price, price, price]
+            tp1 = targets[0] if len(targets) > 0 else price
+            tp2 = targets[1] if len(targets) > 1 else tp1
+            tp3 = targets[2] if len(targets) > 2 else tp2
+            stop = stock.get("stop", "—")
+
+            message = (
+                f"📢 *ANALİST SEVİYE ALARMI*\n"
+                f"👤 *Kaynak:* {source}\n\n"
+                f"📌 *Hisse:* #{ticker} ({name})\n"
+                f"💵 *Güncel Fiyat:* {price:.2f} TL\n"
+                f"⭐ *Model Puanı:* {model_score}\n\n"
+                f"{alert['emoji']} *{alert['type']}:* {alert['level']:.2f} TL\n"
+                f"{alert['direction']}\n"
+                f"📊 *Fark:* %{alert['diff_pct']:+.2f}\n\n"
+                f"💬 *Analist Notu:*\n{note}\n\n"
+                f"🎯 *Model Hedefleri:*\n"
+                f"  • TP1: {tp1} TL\n"
+                f"  • TP2: {tp2} TL\n"
+                f"  • TP3: {tp3} TL\n"
+                f"  • Stop: {stop} TL\n\n"
+                f"⚠️ *Ne Yapmalı:*\n"
+            )
+
+            if alert["type"] == "DESTEK SEVİYESİ":
+                if price >= support:
+                    message += f"Destek {alert['level']:.2f} TL'de tutuyor. Buradan alım düşünülebilir ama stop {alert['level']:.2f} TL altına konmalı. Kırılırsa uzak dur."
+                else:
+                    message += f"Destek {alert['level']:.2f} TL kırıldı! Pozisyon varsa stop'u değerlendir. Yeni alım için acele etme, daha aşağı gelebilir."
+            elif alert["type"] == "DİRENÇ SEVİYESİ":
+                if price >= resistance:
+                    message += f"Direnç {alert['level']:.2f} TL kırıldı! Yukarı yön açıldı. Kâr hedeflerine doğru izle. Geri dönerse dikkat."
+                else:
+                    message += f"Direnç {alert['level']:.2f} TL'ye yaklaştı. Burada satıcı gelebilir. Pozisyon varsa kısmi kâr alma düşünülebilir."
+            else:
+                message += f"Giriş seviyesi {alert['level']:.2f} TL civarında. Analist bu seviyeyi alım için uygun görmüştü. Stop koyarak değerlendirilebilir."
+
+            delivered = _notify(message)
+            if delivered:
+                state[alert_key] = True
+                changed = True
+
+    if changed:
+        _save_state(state)
+
+
 def check_and_send_scheduled_summaries(payload: dict) -> None:
     now_dt = datetime.now().astimezone()
     today_str = now_dt.strftime("%Y-%m-%d")
@@ -380,6 +584,9 @@ def run_once() -> list[dict]:
 
         # Always check and send scheduled summary bulletins for 10:00, 12:00, 14:00, 16:00, 18:00, 18:30
         check_and_send_scheduled_summaries(payload)
+
+        # Check Oğuz/Mergen analyst support/resistance/entry level proximity alerts
+        check_analyst_level_alerts(payload)
 
         with _status_lock:
             _status.update({"running": True, "lastRun": datetime.now().astimezone().isoformat(timespec="seconds"), "lastError": None, "opportunities": opportunities, "tracking": list(tracks.values()), "notificationsEnabled": bool(os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()), "topic": os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()})
