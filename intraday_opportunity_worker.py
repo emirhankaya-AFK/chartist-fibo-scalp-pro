@@ -217,15 +217,44 @@ def manual_opportunity_snapshot(payload: dict) -> list[dict]:
     return rows
 
 
-def send_daily_summary_bist(payload: dict) -> None:
+def check_and_send_scheduled_summaries(payload: dict) -> None:
     now_dt = datetime.now().astimezone()
-    if now_dt.hour < 18 or (now_dt.hour == 18 and now_dt.minute < 15):
+    today_str = now_dt.strftime("%Y-%m-%d")
+    hour = now_dt.hour
+    minute = now_dt.minute
+
+    # Determine current slot for 10:00, 12:00, 14:00, 16:00, 18:00, 18:30
+    slot_name = None
+    slot_key = None
+    if hour == 10 and minute <= 20:
+        slot_name = "10:00 (Seans Açılış Özet Bülteni)"
+        slot_key = f"summary_{today_str}_1000"
+    elif hour == 12 and minute <= 20:
+        slot_name = "12:00 (Seans Ortası Özet Bülteni)"
+        slot_key = f"summary_{today_str}_1200"
+    elif hour == 14 and minute <= 20:
+        slot_name = "14:00 (Öğleden Sonra Özet Bülteni)"
+        slot_key = f"summary_{today_str}_1400"
+    elif hour == 16 and minute <= 20:
+        slot_name = "16:00 (Kapanış Öncesi Özet Bülteni)"
+        slot_key = f"summary_{today_str}_1600"
+    elif hour == 18 and minute <= 20:
+        slot_name = "18:00 (Seans Kapanış Özet Bülteni)"
+        slot_key = f"summary_{today_str}_1800"
+    elif hour == 18 and (25 <= minute <= 55):
+        slot_name = "18:30 (Gün Sonu Detaylı BIST Bülteni)"
+        slot_key = f"summary_{today_str}_1830"
+    elif now_dt.hour >= 18:
+        # Fallback for anytime after 18:15 if EOD wasn't sent yet
+        slot_name = "Gün Sonu Detaylı BIST Bülteni"
+        slot_key = f"summary_{today_str}_eod_fallback"
+
+    if not slot_name:
         return
 
-    today_str = now_dt.strftime("%Y-%m-%d")
     state = _load_state()
-    if state.get("last_eod_summary_date") == today_str:
-        return
+    if state.get(slot_key):
+        return  # Already sent for this specific slot today
 
     index_info = payload.get("index", {})
     xu100_price = index_info.get("price", "—")
@@ -244,11 +273,25 @@ def send_daily_summary_bist(payload: dict) -> None:
     wind_text = f"BIST100: {xu100_price} TL (%{xu100_daily:+.2f}){index_warning}"
 
     stocks = payload.get("stocks", [])
-    top_candidates = sorted(stocks, key=lambda s: s.get("modelScore", 0), reverse=True)[:3]
-    top_text = "\n".join([
-        f"  • #{s['ticker']} (Puan: {s['modelScore']}) - Fiyat: {s['price']} TL | TP1: {s['targets'][0]} TL | TP2: {s['targets'][1]} TL | TP3: {s['targets'][2]} TL"
-        for s in top_candidates
-    ]) if top_candidates else "  • Fırsat hisse bulunamadı"
+    top_candidates = sorted(stocks, key=lambda s: s.get("modelScore", 0), reverse=True)[:5]
+    
+    top_text_list = []
+    for s in top_candidates:
+        targets = s.get("targets") or [s["price"], s["price"], s["price"]]
+        tp1 = targets[0] if len(targets) > 0 else s["price"]
+        tp2 = targets[1] if len(targets) > 1 else tp1
+        tp3 = targets[2] if len(targets) > 2 else tp2
+        stop = s.get("stop", "—")
+        badge = s.get("badges", [""])[0] if s.get("badges") else ""
+        badge_str = f" ({badge})" if badge else ""
+        
+        top_text_list.append(
+            f"📌 *#{s['ticker']}*{badge_str} — Model Puanı: *{s['modelScore']}*\n"
+            f"  • Güncel Fiyat: {s['price']} TL | Stop: {stop} TL\n"
+            f"  • Kâr Hedefleri: TP1: {tp1} TL | TP2: {tp2} TL | TP3: {tp3} TL"
+        )
+
+    top_text = "\n\n".join(top_text_list) if top_text_list else "Fırsat hisse bulunamadı."
 
     try:
         from auto_portfolio import load_portfolio
@@ -262,26 +305,24 @@ def send_daily_summary_bist(payload: dict) -> None:
         net_pnl_pct = (net_pnl / initial) * 100
 
         portfolio_text = (
-            f"  • Toplam Bakiye: {total_val:,.2f} TL\n"
-            f"  • Boştaki Nakit: {cash:,.2f} TL ({len(positions)} Aktif Pozisyon)\n"
-            f"  • Net K/Z: {net_pnl:+.2f} TL (%{net_pnl_pct:+.2f})"
+            f"• Toplam Bakiye: {total_val:,.2f} TL\n"
+            f"• Boştaki Nakit: {cash:,.2f} TL ({len(positions)} Aktif Pozisyon)\n"
+            f"• Net K/Z: {net_pnl:+.2f} TL (%{net_pnl_pct:+.2f})"
         )
     except Exception:
-        portfolio_text = "  • Portföy bilgisi alınamadı"
+        portfolio_text = "Portföy bilgisi alınamadı."
 
     message = (
-        f"📊 *BIST100 GÜN SONU BÜLTENİ ({today_str})*\n\n"
+        f"🕒 *MODEL EN YÜKSEK PUAN ÖZET BÜLTENİ*\n"
+        f"📅 *Zaman:* {today_str} — {slot_name}\n\n"
         f"📈 *Piyasa Yönü:*\n{wind_text}\n\n"
-        f"🤖 *Robot Portföy Durumu (10K TL):*\n{portfolio_text}\n\n"
-        f"⭐ *Günün En Yüksek Puanlı Hisseleri:*\n{top_text}\n\n"
-        f"🏷️ *Strateji Sözlüğü & Anlamları:*\n"
-        f"• *SK3*: 3'lü Süper Konsensüs (3+ Strateji Ortak Onayı)\n"
-        f"• *ÇAO*: Çifte Algo Onayı (2 Strateji Ortak Onayı)\n"
-        f"• *DD*: Dipten Dönüş | *UV*: Uzun Vade | *MMT*: Chartist MM Trend"
+        f"🤖 *10K Robot Portföy Karnesi:*\n{portfolio_text}\n\n"
+        f"⭐ *Modeldeki En Yüksek Puanlı Top 5 Hisse:*\n\n{top_text}\n\n"
+        f"🏷️ *Sözlük:* SK3 = 3'lü Süper Konsensüs | ÇAO = Çifte Algo Onayı"
     )
 
     if _notify(message):
-        state["last_eod_summary_date"] = today_str
+        state[slot_key] = True
         _save_state(state)
 
 
@@ -337,7 +378,8 @@ def run_once() -> list[dict]:
         if changed:
             _save_state(state)
 
-        send_daily_summary_bist(payload)
+        # Always check and send scheduled summary bulletins for 10:00, 12:00, 14:00, 16:00, 18:00, 18:30
+        check_and_send_scheduled_summaries(payload)
 
         with _status_lock:
             _status.update({"running": True, "lastRun": datetime.now().astimezone().isoformat(timespec="seconds"), "lastError": None, "opportunities": opportunities, "tracking": list(tracks.values()), "notificationsEnabled": bool(os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()), "topic": os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()})
