@@ -198,52 +198,62 @@ def update_auto_portfolio(stocks: list[dict], data_date_str: str) -> dict:
         
     state["positions"] = active_positions
     
-    # Process new entries ONLY if the scan belongs to a new trading day
-    if state["last_updated_date"] != data_date_str:
-        candidates = [s for s in stocks if s["modelScore"] >= 80]
-        candidates.sort(key=lambda s: s["modelScore"], reverse=True)
-        
-        for stock in candidates:
-            if len(state["positions"]) >= 5:
-                break
-                
-            ticker = stock["ticker"]
-            already_owned = any(p["ticker"] == ticker for p in state["positions"])
-            if already_owned:
+    # Process new entries whenever active positions < 5 and cash is available (>= 2000 TL)
+    candidates = [s for s in stocks if s.get("modelScore", 0) >= 75 and s.get("recommendation") == "OPEN"]
+    if not candidates:
+        # Fallback to top scored stocks
+        candidates = [s for s in stocks if s.get("modelScore", 0) >= 75]
+    candidates.sort(key=lambda s: s.get("modelScore", 0), reverse=True)
+
+    for stock in candidates:
+        if len(state["positions"]) >= 5:
+            break
+
+        ticker = stock["ticker"]
+        already_owned = any(p["ticker"] == ticker for p in state["positions"])
+        if already_owned:
+            continue
+
+        allocation = min(2000.0, state["current_cash"])
+        if state["current_cash"] >= 500.0:  # If at least 500 TL cash left
+            entry_price = float(stock["price"])
+            if entry_price <= 0:
                 continue
-                
-            allocation = 2000.0  # 20% of 10k starting capital
-            if state["current_cash"] >= allocation:
-                entry_price = stock["price"]
-                qty = math.floor(allocation / entry_price)
-                if qty > 0:
-                    cost = qty * entry_price
-                    state["current_cash"] -= cost
-                    state["positions"].append({
-                        "ticker": ticker,
-                        "qty": qty,
-                        "entry_price": entry_price,
-                        "current_price": entry_price,
-                        "entry_date": data_date_str,
-                        "stop_price": stock["stop"],
-                        "tp1": stock["targets"][0],
-                        "tp2": stock["targets"][1],
-                        "tp3": stock["targets"][2],
-                        "tp1_hit": False,
-                        "cost": cost,
-                        "model_score": stock["modelScore"]
-                    })
-                    send_auto_notification(
-                        f"🤖 *AUTO-TRADE YENİ ALIM YAPILDI*\n\n"
-                        f"📌 *Hisse:* #{ticker}\n"
-                        f"⭐ *Model Puanı:* {stock['modelScore']}\n"
-                        f"💵 *Giriş Fiyatı:* {entry_price} TL ({qty} Lot)\n"
-                        f"💰 *Maliyet:* {cost:.2f} TL\n"
-                        f"🛑 *Stop:* {stock['stop']} TL\n"
-                        f"🎯 *TP1:* {stock['targets'][0]} TL | *TP2:* {stock['targets'][1]} TL"
-                    )
+            qty = math.floor(allocation / entry_price)
+            if qty > 0:
+                cost = qty * entry_price
+                state["current_cash"] -= cost
+                targets = stock.get("targets") or [entry_price * 1.05, entry_price * 1.10, entry_price * 1.15]
+                stop_price = stock.get("stop") or round(entry_price * 0.95, 2)
+
+                state["positions"].append({
+                    "ticker": ticker,
+                    "qty": qty,
+                    "entry_price": entry_price,
+                    "current_price": entry_price,
+                    "entry_date": data_date_str,
+                    "stop_price": stop_price,
+                    "tp1": targets[0],
+                    "tp2": targets[1] if len(targets) > 1 else targets[0],
+                    "tp3": targets[2] if len(targets) > 2 else targets[-1],
+                    "tp1_hit": False,
+                    "cost": cost,
+                    "model_score": stock["modelScore"]
+                })
+                send_auto_notification(
+                    f"🤖 *SANAL PORTFÖY ALIM YAPTI*\n\n"
+                    f"📌 *Hisse:* #{ticker}\n"
+                    f"⭐ *Model Puanı:* {stock['modelScore']}\n"
+                    f"💵 *Alış Fiyatı:* {entry_price:.2f} TL ({qty} Lot)\n"
+                    f"💰 *Harcanan:* {cost:,.2f} TL\n\n"
+                    f"🎯 *Kâr & Stop Hedefleri:*\n"
+                    f"  • Zarar Kes (Stop): {stop_price:.2f} TL\n"
+                    f"  • 1. Hedef (TP1): {targets[0]:.2f} TL\n"
+                    f"  • 2. Hedef (TP2): {targets[1]:.2f} TL\n"
+                    f"  • 3. Hedef (TP3): {targets[2]:.2f} TL\n\n"
+                    f"💼 *Kalan Boştaki Nakit:* {state['current_cash']:,.2f} TL"
+                )
                     
-        state["last_updated_date"] = data_date_str
-        
+    state["last_updated_date"] = data_date_str
     save_portfolio(state)
     return state
