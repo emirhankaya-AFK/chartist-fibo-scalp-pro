@@ -9,10 +9,16 @@ import os
 import time
 import urllib.request
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from threading import Lock
 
 from market_scanner import scan_market
+
+TR_TZ = timezone(timedelta(hours=3))
+
+def get_tr_now() -> datetime:
+    """Returns current Turkey local time (UTC+3)."""
+    return datetime.now(TR_TZ)
 
 
 INTERVAL_SECONDS = int(os.getenv("OPPORTUNITY_INTERVAL_SECONDS", "900"))
@@ -305,7 +311,7 @@ def check_analyst_level_alerts(payload: dict) -> None:
         return
 
     state = _load_state()
-    today_str = datetime.now().astimezone().strftime("%Y-%m-%d")
+    today_str = get_tr_now().strftime("%Y-%m-%d")
     changed = False
 
     stocks_map = {}
@@ -422,36 +428,32 @@ def check_analyst_level_alerts(payload: dict) -> None:
 
 
 def check_and_send_scheduled_summaries(payload: dict) -> None:
-    now_dt = datetime.now().astimezone()
+    now_dt = get_tr_now()
     today_str = now_dt.strftime("%Y-%m-%d")
     hour = now_dt.hour
     minute = now_dt.minute
 
-    # Determine current slot for 10:00, 12:00, 14:00, 16:00, 18:00, 18:30
+    # Determine current slot for TR Local Hours (UTC+3): 10:00, 12:00, 14:00, 16:00, 18:00, 18:30
     slot_name = None
     slot_key = None
-    if hour == 10 and minute <= 20:
+    if hour == 10 and minute <= 30:
         slot_name = "10:00 (Seans Açılış Özet Bülteni)"
         slot_key = f"summary_{today_str}_1000"
-    elif hour == 12 and minute <= 20:
+    elif hour == 12 and minute <= 30:
         slot_name = "12:00 (Seans Ortası Özet Bülteni)"
         slot_key = f"summary_{today_str}_1200"
-    elif hour == 14 and minute <= 20:
+    elif hour == 14 and minute <= 30:
         slot_name = "14:00 (Öğleden Sonra Özet Bülteni)"
         slot_key = f"summary_{today_str}_1400"
-    elif hour == 16 and minute <= 20:
+    elif hour == 16 and minute <= 30:
         slot_name = "16:00 (Kapanış Öncesi Özet Bülteni)"
         slot_key = f"summary_{today_str}_1600"
     elif hour == 18 and minute <= 20:
         slot_name = "18:00 (Seans Kapanış Özet Bülteni)"
         slot_key = f"summary_{today_str}_1800"
-    elif hour == 18 and (25 <= minute <= 55):
+    elif hour == 18 and (25 <= minute <= 59):
         slot_name = "18:30 (Gün Sonu Detaylı BIST Bülteni)"
         slot_key = f"summary_{today_str}_1830"
-    elif now_dt.hour >= 18:
-        # Fallback for anytime after 18:15 if EOD wasn't sent yet
-        slot_name = "Gün Sonu Detaylı BIST Bülteni"
-        slot_key = f"summary_{today_str}_eod_fallback"
 
     if not slot_name:
         return
