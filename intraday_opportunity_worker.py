@@ -570,6 +570,13 @@ def run_once() -> list[dict]:
             else:
                 header = f"⚡ *MODEL FIRSAT ALARMI*"
 
+            entry_low = float(item['entry'][0])
+            entry_high = float(item['entry'][1])
+            raw_stop = float(item.get('stop') or (entry_low * 0.96))
+            effective_stop = round(min(raw_stop, entry_low * 0.97), 2)
+            if effective_stop >= entry_low:
+                effective_stop = round(entry_low * 0.96, 2)
+
             targets = item.get("targets") or [item["price"], item["price"], item["price"]]
             tp1 = targets[0] if len(targets) > 0 else item["price"]
             tp2 = targets[1] if len(targets) > 1 else tp1
@@ -582,8 +589,8 @@ def run_once() -> list[dict]:
                 f"💬 *Açıklama:* {item.get('analystMessage') or item['strategy']}"
                 f"{badge_info}\n\n"
                 f"💵 *Güncel Fiyat:* {item['price']} TL\n"
-                f"🎯 *Alım Bölgesi:* {item['entry'][0]}–{item['entry'][1]} TL arası\n"
-                f"🛑 *Zarar Kes (Stop):* {item['stop']} TL (Altına düşerse satıp çıkılmalı)\n"
+                f"🎯 *Alım Bölgesi:* {entry_low}–{entry_high} TL arası\n"
+                f"🛑 *Zarar Kes (Stop):* {effective_stop} TL (Altına düşerse satıp çıkılmalı)\n"
                 f"🚀 *Kâr Hedefleri:*\n"
                 f"  • *1. Hedef (TP1):* {tp1} TL\n"
                 f"  • *2. Hedef (TP2):* {tp2} TL\n"
