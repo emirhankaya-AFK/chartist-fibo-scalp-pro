@@ -546,16 +546,29 @@ def run_once() -> list[dict]:
             if state.get(item['ticker']) == key:
                 continue
 
-            stock_obj = next((s for s in payload.get("stocks", []) if s.get("ticker") == item["ticker"]), None)
-            badge_info = ""
-            if stock_obj and stock_obj.get("badges"):
-                consensus_badges = [b for b in stock_obj["badges"] if "SK" in b or "ÇAO" in b]
-                if consensus_badges:
-                    badge_info = f"\n🏷️ *KONSENSÜS ROZETİ:* {consensus_badges[0]}"
+            is_manual = item.get("manual", False)
+            score = item.get("score", 0) or 0
 
-            is_super = "SK" in badge_info
-            is_double = "ÇAO" in badge_info
-            header = "🚀 *SÜPER KONSENSÜS ALARMI*" if is_super else "🔥 *ÇİFTE ALGO ONAY ALARMI*" if is_double else "⚡ *MODEL FIRSAT ALARMI*"
+            consensus_badges = []
+            if stock_obj and stock_obj.get("badges"):
+                # Filter positive consensus badges (SK3, ÇAO), excluding risk tags
+                consensus_badges = [b for b in stock_obj["badges"] if ("SK" in b or "ÇAO" in b) and "RİSK" not in b and "OBO" not in b]
+
+            badge_info = ""
+            if consensus_badges:
+                badge_info = f"\n🏷️ *KONSENSÜS ROZETİ:* {consensus_badges[0]}"
+
+            is_super = any("SK" in b for b in consensus_badges)
+            is_double = any("ÇAO" in b for b in consensus_badges)
+
+            if is_manual:
+                header = f"📢 *ANALİST TAKİP ALARMI*"
+            elif is_super:
+                header = f"🚀 *SÜPER KONSENSÜS ALARMI*"
+            elif is_double:
+                header = f"🔥 *ÇİFTE ALGO ONAY ALARMI*"
+            else:
+                header = f"⚡ *MODEL FIRSAT ALARMI*"
 
             targets = item.get("targets") or [item["price"], item["price"], item["price"]]
             tp1 = targets[0] if len(targets) > 0 else item["price"]
