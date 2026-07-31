@@ -532,6 +532,63 @@ def check_and_send_scheduled_summaries(payload: dict) -> None:
         _save_state(state)
 
 
+def check_intraday_price_movements(payload: dict) -> None:
+    """Check if any tracked stock has significant intraday price movements (e.g. >= 2% gain/loss) and push alerts."""
+    state = _load_state()
+    today_str = get_tr_now().strftime("%Y-%m-%d")
+    changed = False
+
+    for stock in payload.get("stocks", []):
+        ticker = stock.get("ticker")
+        quote = stock.get("delayedQuote") or {}
+        price = quote.get("price") or stock.get("price")
+        prev_close = (stock.get("officialOhlc") or {}).get("previousClose") or stock.get("previousClose") or price
+
+        if not ticker or not price or not prev_close or float(prev_close) <= 0:
+            continue
+
+        price = float(price)
+        prev_close = float(prev_close)
+        change_pct = round((price / prev_close - 1) * 100, 2)
+
+        # Triggers for +2.0%, +4.0%, +6.0%, and -3.0%
+        levels = []
+        if change_pct >= 6.0:
+            levels.append(("+6%", "🚀 *GÜÇLÜ RALLİ HAREKETİ*"))
+        elif change_pct >= 4.0:
+            levels.append(("+4%", "🔥 *SEANS İÇİ İVME KAZANDI*"))
+        elif change_pct >= 2.0:
+            levels.append(("+2%", "📈 *POZİTİF YÜKSELİŞ HAREKETİ*"))
+        elif change_pct <= -3.0:
+            levels.append(("-3%", "⚠️ *SEANS İÇİ GERİ ÇEKİLME*"))
+
+        for pct_tag, title in levels:
+            alert_key = f"move_{ticker}_{pct_tag}_{today_str}"
+            if state.get(alert_key):
+                continue
+
+            model_score = stock.get("modelScore", "—")
+            notes = stock.get("analystNotes", [])
+            note_str = next((n.get("Alarm Açıklaması / Talimatı") or n.get("Özel Açıklamalar / Analiz Notları") for n in notes if n.get("Alarm Açıklaması / Talimatı") or n.get("Özel Açıklamalar / Analiz Notları")), "Model Takibi")
+
+            message = (
+                f"{title}\n\n"
+                f"📌 *Hisse:* #{ticker}\n"
+                f"💵 *Güncel Fiyat:* {price:.2f} TL (Günlük: %{change_pct:+.2f})\n"
+                f"⭐ *Model Puanı:* {model_score}\n"
+                f"💬 *Analist / Strateji Notu:*\n{note_str}\n\n"
+                f"📊 *Önceki Kapanış:* {prev_close:.2f} TL"
+            )
+
+            delivered = _notify(message)
+            if delivered:
+                state[alert_key] = True
+                changed = True
+
+    if changed:
+        _save_state(state)
+
+
 def run_once() -> list[dict]:
     try:
         payload = scan_market()
@@ -540,12 +597,14 @@ def run_once() -> list[dict]:
         opportunities.extend(item for item in manual_opportunity_snapshot(payload) if item["ticker"] not in existing)
         tracks = _record_tracking(payload, opportunities)
         state = _load_state()
+        today_str = get_tr_now().strftime("%Y-%m-%d")
         changed = False
         for item in opportunities:
-            key = f"manual|{item['ticker']}" if item.get("manual") else f"{item['ticker']}|{item['strategy']}|{item['entry'][0]}|{item['entry'][1]}"
-            if state.get(item['ticker']) == key:
+            key = f"{today_str}|manual|{item['ticker']}" if item.get("manual") else f"{today_str}|{item['ticker']}|{item['strategy']}"
+            if state.get(key):
                 continue
 
+            stock_obj = next((s for s in payload.get("stocks", []) if s.get("ticker") == item["ticker"]), None)
             is_manual = item.get("manual", False)
             score = item.get("score", 0) or 0
 
@@ -599,7 +658,7 @@ def run_once() -> list[dict]:
             delivered = _notify(message)
             _append_notification_log(item, message, delivered)
             if delivered:
-                state[item['ticker']] = key
+                state[key] = True
                 changed = True
         if changed:
             _save_state(state)
@@ -609,6 +668,9 @@ def run_once() -> list[dict]:
 
         # Check Oğuz/Mergen analyst support/resistance/entry level proximity alerts
         check_analyst_level_alerts(payload)
+
+        # Check real-time intraday price movements (e.g. +2%, +4%, +6% moves)
+        check_intraday_price_movements(payload)
 
         with _status_lock:
             _status.update({"running": True, "lastRun": datetime.now().astimezone().isoformat(timespec="seconds"), "lastError": None, "opportunities": opportunities, "tracking": list(tracks.values()), "notificationsEnabled": bool(os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()), "topic": os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()})
