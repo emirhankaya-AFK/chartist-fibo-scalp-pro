@@ -96,7 +96,19 @@ def _append_notification_log(item: dict, message: str, delivered: bool) -> None:
         pass
 
 
+def is_notification_window_open() -> bool:
+    """Returns True ONLY if Turkey Local Time (UTC+3) is between 09:50 and 18:15 on weekdays."""
+    now = get_tr_now()
+    if now.weekday() >= 5:  # Weekend
+        return False
+    start_time = now.replace(hour=9, minute=50, second=0, microsecond=0)
+    end_time = now.replace(hour=18, minute=15, second=0, microsecond=0)
+    return start_time <= now <= end_time
+
+
 def _notify(message: str) -> bool:
+    if not is_notification_window_open():
+        return False
     sent = False
     topic = os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()
     if topic:
@@ -448,12 +460,9 @@ def check_and_send_scheduled_summaries(payload: dict) -> None:
     elif hour == 16 and minute <= 30:
         slot_name = "16:00 (Kapanış Öncesi Özet Bülteni)"
         slot_key = f"summary_{today_str}_1600"
-    elif hour == 18 and minute <= 20:
-        slot_name = "18:00 (Seans Kapanış Özet Bülteni)"
+    elif hour == 18 and minute <= 15:
+        slot_name = "18:00 (Seans Kapanış ve Gün Sonu Bülteni)"
         slot_key = f"summary_{today_str}_1800"
-    elif hour == 18 and (25 <= minute <= 59):
-        slot_name = "18:30 (Gün Sonu Detaylı BIST Bülteni)"
-        slot_key = f"summary_{today_str}_1830"
 
     if not slot_name:
         return
