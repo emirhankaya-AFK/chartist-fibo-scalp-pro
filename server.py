@@ -204,8 +204,24 @@ def api_backtest(ticker: str):
         return jsonify({"status": "error", "message": str(exc)}), 503
 
 
+_scan_lock = threading.Lock()
+
+def trigger_scan_async():
+    """Triggers market scan and notification dispatch in background if not already running."""
+    if _scan_lock.acquire(blocking=False):
+        def _worker():
+            try:
+                run_opportunity_scan()
+            except Exception:
+                pass
+            finally:
+                _scan_lock.release()
+        threading.Thread(target=_worker, daemon=True).start()
+
+
 @app.get("/api/auto-portfolio")
 def api_auto_portfolio():
+    trigger_scan_async()
     try:
         from auto_portfolio import load_portfolio
         return jsonify({"status": "ok", "portfolio": load_portfolio()})
@@ -237,6 +253,7 @@ def _ensure_threads():
 @app.before_request
 def _before_request_hook():
     _ensure_threads()
+    trigger_scan_async()
 
 
 if __name__ == "__main__":
