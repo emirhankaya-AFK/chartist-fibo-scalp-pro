@@ -8,6 +8,13 @@ PORTFOLIO_FILE = "data/auto_portfolio.json"
 
 def send_auto_notification(message: str) -> None:
     """Sends real-time notifications to NTFY (phone push app) and Telegram Bot if configured."""
+    try:
+        from intraday_opportunity_worker import is_notification_window_open
+        if not is_notification_window_open():
+            return
+    except Exception:
+        pass
+
     # 1. NTFY Push Notification
     topic = os.getenv("NTFY_TOPIC", "emirkan_bist_alarm").strip()
     if topic:

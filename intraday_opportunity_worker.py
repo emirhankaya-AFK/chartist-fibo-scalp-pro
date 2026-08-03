@@ -681,6 +681,13 @@ def run_once() -> list[dict]:
         # Check real-time intraday price movements (e.g. +2%, +4%, +6% moves)
         check_intraday_price_movements(payload)
 
+        # Update 10K Paper Trading Auto-Portfolio state automatically
+        try:
+            from auto_portfolio import update_auto_portfolio
+            update_auto_portfolio(payload.get("stocks", []), today_str)
+        except Exception:
+            pass
+
         with _status_lock:
             _status.update({"running": True, "lastRun": datetime.now().astimezone().isoformat(timespec="seconds"), "lastError": None, "opportunities": opportunities, "tracking": list(tracks.values()), "notificationsEnabled": bool(os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()), "topic": os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()})
         return opportunities
