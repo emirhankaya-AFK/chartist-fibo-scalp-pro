@@ -121,8 +121,8 @@ def _notify(message: str) -> bool:
         try:
             with urllib.request.urlopen(request, timeout=15):
                 sent = True
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"[NOTIFY NTFY ERROR] {exc}")
 
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()

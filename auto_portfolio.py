@@ -20,7 +20,7 @@ def send_auto_notification(message: str) -> None:
     if topic:
         try:
             url = f"https://ntfy.sh/{topic}"
-            headers = {"Title": "🤖 Chartist Auto-Trade", "Priority": "high", "Tags": "robot,chart_with_upwards_trend"}
+            headers = {"Title": "Chartist Auto-Trade", "Priority": "high", "Tags": "robot,chart_with_upwards_trend"}
             token = os.getenv("NTFY_TOKEN", "").strip()
             if token:
                 headers["Authorization"] = f"Bearer {token}"
