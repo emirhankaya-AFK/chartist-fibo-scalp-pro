@@ -250,12 +250,13 @@ def _ensure_threads():
         threading.Thread(target=_keep_alive_loop, name="keep-alive-worker", daemon=True).start()
 
 
+_ensure_threads()
+
+
 @app.before_request
 def _before_request_hook():
     _ensure_threads()
-    trigger_scan_async()
 
 
 if __name__ == "__main__":
-    _ensure_threads()
     app.run(host="127.0.0.1", port=8080, debug=False)

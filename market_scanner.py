@@ -101,7 +101,9 @@ SECTOR_BY_TICKER: dict[str, str] = {
 
 _cache_lock = threading.Lock()
 _cache: dict[str, Any] = {"created_at": 0.0, "payload": None}
-EXCEL_NOTES_PATH = Path.home() / "Desktop" / "Hisselerin_Teknik_Verileri.xlsx"
+_DESKTOP_EXCEL = Path.home() / "Desktop" / "Hisselerin_Teknik_Verileri.xlsx"
+_PROJECT_EXCEL = Path(__file__).resolve().parent / "Hisselerin_Teknik_Verileri.xlsx"
+EXCEL_NOTES_PATH = _DESKTOP_EXCEL if _DESKTOP_EXCEL.exists() else _PROJECT_EXCEL
 LAST_SUCCESSFUL_SCAN_PATH = Path(__file__).resolve().parent / "data" / "last_successful_scan.json"
 
 
