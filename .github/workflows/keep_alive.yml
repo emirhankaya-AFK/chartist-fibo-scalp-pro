@@ -2,8 +2,8 @@ name: Render Keep Alive Cron
 
 on:
   schedule:
-    # Run every 5 minutes from 06:45 to 15:30 UTC (09:45 to 18:30 Turkey Time, UTC+3) on weekdays (Mon-Fri)
-    - cron: '*/5 6-15 * * 1-5'
+    # Run every 1 minute from 06:45 to 15:30 UTC (09:45 to 18:30 Turkey Time, UTC+3) on weekdays (Mon-Fri)
+    - cron: '* 6-15 * * 1-5'
   workflow_dispatch:
 
 jobs:

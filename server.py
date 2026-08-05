@@ -165,7 +165,7 @@ def api_worker_toggle():
 
 
 def _opportunity_loop():
-    interval = max(60, int(os.getenv("OPPORTUNITY_INTERVAL_SECONDS", "300")))
+    interval = max(30, int(os.getenv("OPPORTUNITY_INTERVAL_SECONDS", "60")))
     while True:
         if _worker_enabled:
             try:
