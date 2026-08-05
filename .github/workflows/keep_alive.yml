@@ -1,0 +1,18 @@
+name: Render Keep Alive Cron
+
+on:
+  schedule:
+    # Run every 5 minutes from 06:45 to 15:30 UTC (09:45 to 18:30 Turkey Time, UTC+3) on weekdays (Mon-Fri)
+    - cron: '*/5 6-15 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Web Application
+        run: |
+          echo "Pinging Render server at $(date)..."
+          curl -s -f --max-time 30 https://chartist-fibo-scalp-pro.onrender.com/api/notifications > /dev/null || echo "Ping failed or timed out"
+          curl -s -f --max-time 30 https://chartist-fibo-scalp-pro.onrender.com/api/auto-portfolio > /dev/null || echo "Ping failed or timed out"
+          echo "Ping completed successfully."

@@ -176,18 +176,20 @@ def _opportunity_loop():
 
 
 def _keep_alive_loop():
-    """Internal keep-alive self pinger to ensure Flask process remains active."""
+    """Internal & External keep-alive pinger to ensure Render container remains 100% awake."""
     import urllib.request
-    port = os.getenv("PORT", "8080")
-    url = f"http://127.0.0.1:{port}/api/auto-portfolio"
+    render_url = "https://chartist-fibo-scalp-pro.onrender.com/api/notifications"
+    local_port = os.getenv("PORT", "8080")
+    local_url = f"http://127.0.0.1:{local_port}/api/notifications"
     while True:
-        time.sleep(240)  # Ping every 4 minutes
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "KeepAlivePinger/1.0"})
-            with urllib.request.urlopen(req, timeout=10):
+        time.sleep(180)  # Ping every 3 minutes
+        for url in [local_url, render_url]:
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "KeepAlivePinger/1.0"})
+                with urllib.request.urlopen(req, timeout=15):
+                    pass
+            except Exception:
                 pass
-        except Exception:
-            pass
 
 
 @app.get("/api/backtest/<ticker>")
