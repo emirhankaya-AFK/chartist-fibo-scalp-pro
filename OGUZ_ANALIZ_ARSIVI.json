@@ -66,10 +66,10 @@
   {
     "ticker": "NETCD",
     "name": "Netcad Yazılım A.Ş.",
-    "entry_level": 144.5,
-    "current_live_price": 139.3,
-    "performance": "-3.60%",
-    "note": "[Oğuz Analizi] Netcd 144.50₺ takibe alındı (%3.5 marj)."
+    "entry_level": 128.0,
+    "current_live_price": 140.5,
+    "performance": "+9.77%",
+    "note": "[Oğuz Telegram] Netcd 128₺ buradan değerlendirilebilir (%10+ marj)."
   },
   {
     "ticker": "ASTOR",
@@ -222,5 +222,45 @@
     "current_live_price": 2048.0,
     "performance": "-6.06%",
     "note": "[Oğuz Analizi] Destek Faktoring tradelik takip (Giriş ~2.180 TL, Anlık ~2.048 TL)."
+  },
+  {
+    "ticker": "AKFYE",
+    "name": "Akfen Yenilenebilir Enerji A.Ş.",
+    "entry_level": 23.2,
+    "current_live_price": 24.38,
+    "performance": "+5.08%",
+    "note": "[Oğuz Telegram] Buna 23₺'de 23,40₺ ortalama yapabilir. 24.50₺ direnç."
+  },
+  {
+    "ticker": "PRKME",
+    "name": "Park Elektrik Üretim Madencilik A.Ş.",
+    "entry_level": 17.84,
+    "current_live_price": 19.11,
+    "performance": "+7.12%",
+    "note": "[Oğuz Telegram] Alıp satanlar Prkme 17,84₺ bakabilir. Bakır ve Madencilik takibi."
+  },
+  {
+    "ticker": "BETAE",
+    "name": "Beta Enerji ve Teknoloji A.Ş.",
+    "entry_level": 78.0,
+    "current_live_price": 108.6,
+    "performance": "+39.23%",
+    "note": "[Oğuz Telegram] Betae 78₺ tradelik bakılabilir."
+  },
+  {
+    "ticker": "ENERY",
+    "name": "Enerya Enerji A.Ş.",
+    "entry_level": 8.86,
+    "current_live_price": 11.2,
+    "performance": "+26.41%",
+    "note": "[Oğuz Telegram] Enery 8,86₺ buradan değerlendiriyorum."
+  },
+  {
+    "ticker": "TRALT",
+    "name": "Türk Altın İşletmeleri A.Ş.",
+    "entry_level": 12.0,
+    "current_live_price": 12.45,
+    "performance": "+3.75%",
+    "note": "[Oğuz Telegram / Emtia Takip] Altın emtiasına duyarlı altın madenciliği takibi."
   }
 ]

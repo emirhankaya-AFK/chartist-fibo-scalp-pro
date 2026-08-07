@@ -310,16 +310,31 @@ def _macro_snapshots(
     trading_date: date,
     official_indices: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Best-effort delayed macro strip; never used in stock scoring."""
-    symbols = {"BIST30": "XU030.IS", "BIST500": "XU500.IS", "USD/TRY": "TRY=X", "EUR/TRY": "EURTRY=X"}
+    """Best-effort delayed macro strip including commodities (Gold, Silver, Brent, Copper)."""
+    symbols = {
+        "BIST30": "XU030.IS",
+        "BIST500": "XU500.IS",
+        "USD/TRY": "TRY=X",
+        "EUR/TRY": "EURTRY=X",
+        "ONS ALTIN ($)": "GC=F",
+        "ONS GÜMÜŞ ($)": "SI=F",
+        "BRENT PETROL ($)": "BZ=F",
+        "BAKIR ($)": "HG=F",
+    }
     try:
         frame = yf.download(list(symbols.values()), period="5d", interval="1d", group_by="ticker", auto_adjust=False, progress=False, threads=True)
     except Exception:
         return []
     result = []
+    usd_try_val = None
+    gold_ons_val = None
+
     for label, symbol in symbols.items():
         try:
-            close = frame[symbol]["Close"].dropna()
+            sub = frame[symbol] if symbol in frame else None
+            if sub is None or "Close" not in sub:
+                continue
+            close = sub["Close"].dropna()
             if len(close) < 1:
                 continue
             yahoo_value = float(close.iloc[-1])
@@ -340,6 +355,12 @@ def _macro_snapshots(
                 daily = round((value / previous - 1) * 100, 2)
             else:
                 daily = None
+
+            if label == "USD/TRY":
+                usd_try_val = value
+            elif label == "ONS ALTIN ($)":
+                gold_ons_val = value
+
             result.append({
                 "label": label,
                 "value": round(value, 4),
@@ -349,6 +370,17 @@ def _macro_snapshots(
             })
         except (KeyError, IndexError, TypeError, ValueError):
             continue
+
+    if usd_try_val and gold_ons_val:
+        gram_altin = (gold_ons_val * usd_try_val) / 31.1035
+        result.append({
+            "label": "GRAM ALTIN (TL)",
+            "value": round(gram_altin, 2),
+            "daily": next((r.get("daily") for r in result if r.get("label") == "ONS ALTIN ($)"), None),
+            "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "source": "Ons Altın & USD/TRY türetilmiş"
+        })
+
     return result
 
 

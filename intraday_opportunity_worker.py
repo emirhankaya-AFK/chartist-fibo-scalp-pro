@@ -598,6 +598,111 @@ def check_intraday_price_movements(payload: dict) -> None:
         _save_state(state)
 
 
+COMMODITY_MAPPING = [
+    {
+        "name": "Altın",
+        "macro_label": "ONS ALTIN ($)",
+        "icon": "🟡",
+        "min_move": 0.7,
+        "related": [
+            {"ticker": "TRALT", "name": "Türk Altın İşletmeleri"},
+            {"ticker": "KOZAL", "name": "Koza Altın"},
+            {"ticker": "KOZAA", "name": "Koza Anadolu"},
+            {"ticker": "IPEKE", "name": "İpek Doğal Enerji"}
+        ]
+    },
+    {
+        "name": "Gümüş",
+        "macro_label": "ONS GÜMÜŞ ($)",
+        "icon": "⚪",
+        "min_move": 0.8,
+        "related": [
+            {"ticker": "TRALT", "name": "Türk Altın İşletmeleri"},
+            {"ticker": "EUREN", "name": "Europen Endüstri"},
+            {"ticker": "SISE", "name": "Şişecam"}
+        ]
+    },
+    {
+        "name": "Bakır",
+        "macro_label": "BAKIR ($)",
+        "icon": "🔴",
+        "min_move": 0.8,
+        "related": [
+            {"ticker": "PRKME", "name": "Park Elektrik Üretim Madencilik"},
+            {"ticker": "KRDMD", "name": "Kardemir D"},
+            {"ticker": "EREGL", "name": "Ereğli Demir Çelik"},
+            {"ticker": "KCAER", "name": "Kocaer Çelik"}
+        ]
+    },
+    {
+        "name": "Brent Petrol",
+        "macro_label": "BRENT PETROL ($)",
+        "icon": "🛢️",
+        "min_move": 1.2,
+        "related": [
+            {"ticker": "TUPRS", "name": "Tüpraş"},
+            {"ticker": "PETKM", "name": "Petkim"},
+            {"ticker": "THYAO", "name": "Türk Hava Yolları"},
+            {"ticker": "PGSUS", "name": "Pegasus"}
+        ]
+    }
+]
+
+
+def check_commodity_correlation_alerts(payload: dict) -> None:
+    """Check commodity price movements (Gold, Silver, Petrol, Copper) and alert on lagging related stock reactions."""
+    market_board = payload.get("marketBoard", [])
+    if not market_board:
+        return
+
+    state = _load_state()
+    today_str = get_tr_now().strftime("%Y-%m-%d")
+    changed = False
+
+    stocks_dict = {s.get("ticker"): s for s in payload.get("stocks", [])}
+
+    for comm in COMMODITY_MAPPING:
+        macro_item = next((m for m in market_board if m.get("label") == comm["macro_label"]), None)
+        if not macro_item or macro_item.get("daily") is None:
+            continue
+
+        comm_pct = float(macro_item["daily"])
+        comm_val = float(macro_item["value"])
+
+        if comm_pct >= comm["min_move"]:
+            for rel in comm["related"]:
+                ticker = rel["ticker"]
+                stock_obj = stocks_dict.get(ticker)
+                if not stock_obj:
+                    continue
+
+                stock_price = float(stock_obj.get("price", 0))
+                stock_pct = float(stock_obj.get("daily", 0) or 0)
+
+                # Alert if commodity rose strongly (e.g. +1%) but stock lagged behind (< +0.5%)
+                if stock_pct < (comm_pct * 0.5):
+                    alert_key = f"comm_{comm['name']}_{ticker}_{today_str}"
+                    if state.get(alert_key):
+                        continue
+
+                    title = f"{comm['icon']} *EMTİA KORELASYON & GECİKMELİ TEPKİ ALARMI*"
+                    message = (
+                        f"{title}\n\n"
+                        f"📊 *Emtia:* {comm['name']} ({macro_item['label']}) -> *%{comm_pct:+.2f}* Yükselişte! ({comm_val:.2f})\n"
+                        f"📌 *Etkileşimli Hisse:* #{ticker} ({rel['name']})\n"
+                        f"💵 *Hisse Fiyatı:* {stock_price:.2f} TL (Günlük: *%{stock_pct:+.2f}*)\n\n"
+                        f"⚡ *Durum:* {comm['name']} yükselirken #{ticker} henüz beklenen tepkiyi vermedi (Gecikmeli Yükseliş Potansiyeli)!"
+                    )
+
+                    delivered = _notify(message)
+                    if delivered:
+                        state[alert_key] = True
+                        changed = True
+
+    if changed:
+        _save_state(state)
+
+
 def run_once() -> list[dict]:
     try:
         payload = scan_market()
@@ -680,6 +785,9 @@ def run_once() -> list[dict]:
 
         # Check real-time intraday price movements (e.g. +2%, +4%, +6% moves)
         check_intraday_price_movements(payload)
+
+        # Check commodity correlation alerts (Gold, Silver, Petrol, Copper vs related stocks)
+        check_commodity_correlation_alerts(payload)
 
         # Update 10K Paper Trading Auto-Portfolio state automatically
         try:
