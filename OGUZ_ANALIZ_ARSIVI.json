@@ -34,10 +34,10 @@
   {
     "ticker": "MEYSU",
     "name": "Meysu Gıda Sanayi A.Ş.",
-    "entry_level": 13.03,
-    "current_live_price": 13.77,
-    "performance": "+5.68%",
-    "note": "[Oğuz Analizi] Meysu 13.03₺ tradelik bakıyorum (%6.5 marj)."
+    "entry_level": 10.99,
+    "current_live_price": 10.99,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram] Meysu 10.99₺ takibe alındı."
   },
   {
     "ticker": "EKOS",
@@ -193,11 +193,11 @@
   },
   {
     "ticker": "EKDMR",
-    "name": "Ekinciler Demir Çelik A.Ş.",
-    "entry_level": 54.1,
-    "current_live_price": 51.65,
-    "performance": "-4.53%",
-    "note": "[Oğuz Analizi] Ekinciler Demir Çelik 54.10₺ takibe alındı."
+    "name": "Ege Demir Sanayi A.Ş.",
+    "entry_level": 47.74,
+    "current_live_price": 47.74,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram] Ekdmr 47.74₺ takibe alındı."
   },
   {
     "ticker": "MOGAN",
@@ -294,5 +294,53 @@
     "current_live_price": 24.8,
     "performance": "+3.85%",
     "note": "[Oğuz Telegram / Bakır Takip] Sarky 23,88₺ - 23,50₺'lere düşerse mutlaka takibe alınabilir."
+  },
+  {
+    "ticker": "ZGYO",
+    "name": "Zergay Gayrimenkul Yatırım Ortaklığı A.Ş.",
+    "entry_level": 33.9,
+    "current_live_price": 33.9,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram] Zgyo 33.90₺ takibe alındı."
+  },
+  {
+    "ticker": "PENGD",
+    "name": "Penguen Gıda Sanayi A.Ş.",
+    "entry_level": 9.6,
+    "current_live_price": 9.79,
+    "performance": "+1.98%",
+    "note": "[Oğuz Telegram] Pengd 9,60₺ yine bakılabilir 9₺ dibi göz önünde tutularak."
+  },
+  {
+    "ticker": "PAHOL",
+    "name": "Pasifik Holding A.Ş.",
+    "entry_level": 1.27,
+    "current_live_price": 1.4,
+    "performance": "+10.24%",
+    "note": "[Oğuz Telegram] Pahol 1,27₺ tavan takibi."
+  },
+  {
+    "ticker": "KTLEV",
+    "name": "Katılımevim Tasarruf Finansman A.Ş.",
+    "entry_level": 37.28,
+    "current_live_price": 41.52,
+    "performance": "+11.37%",
+    "note": "[Oğuz Telegram] Ktlev alabilir (Tabandan %16 tepki)."
+  },
+  {
+    "ticker": "PASEU",
+    "name": "Pasifik Avrasya Lojistik Dış Ticaret A.Ş.",
+    "entry_level": 94.0,
+    "current_live_price": 94.0,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram] Paseu 94₺, 90₺'de ekleme yapacak şekilde değerlendiriyorum."
+  },
+  {
+    "ticker": "JANTS",
+    "name": "Jantsa Jant Sanayi ve Ticaret A.Ş.",
+    "entry_level": 14.85,
+    "current_live_price": 15.66,
+    "performance": "+5.45%",
+    "note": "[Oğuz Telegram] Jants 14,85₺ açılışta bakabiliriz 14,50₺ altı. 16₺ direnç."
   }
 ]
