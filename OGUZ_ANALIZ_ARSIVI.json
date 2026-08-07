@@ -347,9 +347,9 @@
     "ticker": "ARFYE",
     "name": "Arf Bio Enerji Sanayi A.Ş.",
     "entry_level": 29.2,
-    "current_live_price": 29.2,
-    "performance": "0.00%",
-    "note": "[Oğuz Telegram] Arfye 29.20₺ takibe alındı."
+    "current_live_price": 29.82,
+    "performance": "+2.12%",
+    "note": "[Oğuz Telegram] Arfye 29,20₺ Güzel tepki verebilir."
   },
   {
     "ticker": "INVEO",
@@ -374,5 +374,29 @@
     "current_live_price": 139.6,
     "performance": "+4.26%",
     "note": "[Oğuz Telegram] Logo 133,90₺ buradan takip ediyorum (%5 kazanç)."
+  },
+  {
+    "ticker": "ECOGR",
+    "name": "Ecogreen Enerji Holding A.Ş.",
+    "entry_level": 34.4,
+    "current_live_price": 36.32,
+    "performance": "+5.58%",
+    "note": "[Oğuz Telegram] Ecogr 34,40₺ trade verebilir."
+  },
+  {
+    "ticker": "SDTTR",
+    "name": "SDT Uzay ve Savunma Teknolojileri A.Ş.",
+    "entry_level": 216.0,
+    "current_live_price": 225.8,
+    "performance": "+4.54%",
+    "note": "[Oğuz Telegram] Sdttr 216₺, 190₺ dibi var. Buradan değerlendirilebilir."
+  },
+  {
+    "ticker": "FONET",
+    "name": "Fonet Bilgi Teknolojileri A.Ş.",
+    "entry_level": 5.0,
+    "current_live_price": 5.26,
+    "performance": "+5.20%",
+    "note": "[Oğuz Telegram] Fonet 5₺ buradan tradelik bakılabilir."
   }
 ]
