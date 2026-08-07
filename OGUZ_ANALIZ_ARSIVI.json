@@ -17,11 +17,11 @@
   },
   {
     "ticker": "YAYLA",
-    "name": "Yayla Enerji Üretim Turizm",
-    "entry_level": 23.1,
-    "current_live_price": 22.98,
-    "performance": "-0.52%",
-    "note": "[Oğuz Analizi] 23.10₺ ve 23.78₺ tradelik bakılabilir, 24₺ hareketi."
+    "name": "Yayla Enerji Üretim Turizm A.Ş.",
+    "entry_level": 20.9,
+    "current_live_price": 22.34,
+    "performance": "+6.89%",
+    "note": "[Oğuz Telegram] Yayla 20,90₺ tradelik bakabiliriz (%7 prim)."
   },
   {
     "ticker": "DOFRB",
@@ -66,10 +66,10 @@
   {
     "ticker": "NETCD",
     "name": "Netcad Yazılım A.Ş.",
-    "entry_level": 128.0,
-    "current_live_price": 140.5,
-    "performance": "+9.77%",
-    "note": "[Oğuz Telegram] Netcd 128₺ buradan değerlendirilebilir (%10+ marj)."
+    "entry_level": 126.4,
+    "current_live_price": 128.4,
+    "performance": "+1.58%",
+    "note": "[Oğuz Telegram] Netcd 126,40₺ tradelik takip edilebilir."
   },
   {
     "ticker": "ASTOR",
@@ -193,11 +193,11 @@
   },
   {
     "ticker": "EKDMR",
-    "name": "Ege Demir Sanayi A.Ş.",
-    "entry_level": 47.74,
-    "current_live_price": 47.74,
-    "performance": "0.00%",
-    "note": "[Oğuz Telegram] Ekdmr 47.74₺ takibe alındı."
+    "name": "Ekinciler Demir ve Çelik Sanayi A.Ş.",
+    "entry_level": 48.4,
+    "current_live_price": 49.2,
+    "performance": "+1.65%",
+    "note": "[Oğuz Telegram] Ekdmr 48,40₺ / 49.00₺ tekrar tradelik bakılabilir."
   },
   {
     "ticker": "MOGAN",
@@ -342,5 +342,37 @@
     "current_live_price": 15.66,
     "performance": "+5.45%",
     "note": "[Oğuz Telegram] Jants 14,85₺ açılışta bakabiliriz 14,50₺ altı. 16₺ direnç."
+  },
+  {
+    "ticker": "ARFYE",
+    "name": "Arf Bio Enerji Sanayi A.Ş.",
+    "entry_level": 29.2,
+    "current_live_price": 29.2,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram] Arfye 29.20₺ takibe alındı."
+  },
+  {
+    "ticker": "INVEO",
+    "name": "Inveo Yatırım Holding A.Ş.",
+    "entry_level": 6.98,
+    "current_live_price": 7.11,
+    "performance": "+1.86%",
+    "note": "[Oğuz Telegram] Inveo 6,98₺. Lakin 6,80 civarında stop olunabilir."
+  },
+  {
+    "ticker": "MIATK",
+    "name": "Mia Teknoloji A.Ş.",
+    "entry_level": 29.84,
+    "current_live_price": 30.08,
+    "performance": "+0.80%",
+    "note": "[Oğuz Telegram] Miatk 29,84₺ tradelik bakılabilir (%1-2 marj)."
+  },
+  {
+    "ticker": "LOGO",
+    "name": "Logo Yazılım Sanayi ve Ticaret A.Ş.",
+    "entry_level": 133.9,
+    "current_live_price": 139.6,
+    "performance": "+4.26%",
+    "note": "[Oğuz Telegram] Logo 133,90₺ buradan takip ediyorum (%5 kazanç)."
   }
 ]
