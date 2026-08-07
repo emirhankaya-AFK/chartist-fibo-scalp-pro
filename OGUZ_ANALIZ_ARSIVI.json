@@ -74,10 +74,10 @@
   {
     "ticker": "ASTOR",
     "name": "Astor Enerji A.Ş.",
-    "entry_level": 286.0,
-    "current_live_price": 297.0,
-    "performance": "+3.85%",
-    "note": "[Oğuz Analizi] 286₺ Astor bakılabilir, 295₺ ve 299₺ dirençleri."
+    "entry_level": 288.5,
+    "current_live_price": 302.75,
+    "performance": "+4.94%",
+    "note": "[Oğuz Telegram] Astor 288,50₺ tradelik bakılabilir. 300₺'de direnç."
   },
   {
     "ticker": "IZMDC",
@@ -243,9 +243,9 @@
     "ticker": "BETAE",
     "name": "Beta Enerji ve Teknoloji A.Ş.",
     "entry_level": 78.0,
-    "current_live_price": 108.6,
-    "performance": "+39.23%",
-    "note": "[Oğuz Telegram] Betae 78₺ tradelik bakılabilir."
+    "current_live_price": 89.8,
+    "performance": "+15.13%",
+    "note": "[Oğuz Telegram] Betae 78₺ tradelik bakılabilir. 89.80₺ tavan takibi."
   },
   {
     "ticker": "ENERY",
@@ -262,5 +262,37 @@
     "current_live_price": 12.45,
     "performance": "+3.75%",
     "note": "[Oğuz Telegram / Emtia Takip] Altın emtiasına duyarlı altın madenciliği takibi."
+  },
+  {
+    "ticker": "PRKAB",
+    "name": "Türk Prysmian Kablo ve Sistemleri A.Ş.",
+    "entry_level": 33.88,
+    "current_live_price": 33.88,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram / Bakır Takip] Prkab 33.88₺ seviyesinden bakır kablo/maden takibi."
+  },
+  {
+    "ticker": "CVKMD",
+    "name": "CVK Maden İşletmeleri Sanayi ve Ticaret A.Ş.",
+    "entry_level": 14.7,
+    "current_live_price": 15.95,
+    "performance": "+8.50%",
+    "note": "[Oğuz Telegram / Maden Takip] Cvkmd 14,70₺ yine bakılabilir."
+  },
+  {
+    "ticker": "AYDEM",
+    "name": "Aydem Yenilenebilir Enerji A.Ş.",
+    "entry_level": 23.0,
+    "current_live_price": 23.82,
+    "performance": "+3.56%",
+    "note": "[Oğuz Telegram] Aydem 23₺ takibe alındı."
+  },
+  {
+    "ticker": "SARKY",
+    "name": "Sarkuysan Elektrolitik Bakır Sanayi A.Ş.",
+    "entry_level": 23.88,
+    "current_live_price": 24.8,
+    "performance": "+3.85%",
+    "note": "[Oğuz Telegram / Bakır Takip] Sarky 23,88₺ - 23,50₺'lere düşerse mutlaka takibe alınabilir."
   }
 ]

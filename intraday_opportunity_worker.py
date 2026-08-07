@@ -606,6 +606,7 @@ COMMODITY_MAPPING = [
         "min_move": 0.7,
         "related": [
             {"ticker": "TRALT", "name": "Türk Altın İşletmeleri"},
+            {"ticker": "CVKMD", "name": "CVK Maden İşletmeleri"},
             {"ticker": "KOZAL", "name": "Koza Altın"},
             {"ticker": "KOZAA", "name": "Koza Anadolu"},
             {"ticker": "IPEKE", "name": "İpek Doğal Enerji"}
@@ -629,6 +630,8 @@ COMMODITY_MAPPING = [
         "min_move": 0.8,
         "related": [
             {"ticker": "PRKME", "name": "Park Elektrik Üretim Madencilik"},
+            {"ticker": "PRKAB", "name": "Türk Prysmian Kablo (Bakır)"},
+            {"ticker": "SARKY", "name": "Sarkuysan Elektrolitik Bakır"},
             {"ticker": "KRDMD", "name": "Kardemir D"},
             {"ticker": "EREGL", "name": "Ereğli Demir Çelik"},
             {"ticker": "KCAER", "name": "Kocaer Çelik"}
