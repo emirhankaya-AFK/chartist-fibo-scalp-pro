@@ -347,8 +347,8 @@ def check_analyst_level_alerts(payload: dict) -> None:
         source = level.get("source", "Analist")
         name = level.get("name") or stock.get("name") or ticker
 
-        # Proximity threshold: within 2% of a key level
-        threshold = 0.02
+        # Proximity threshold: within 3.5% of a key level
+        threshold = 0.035
         alerts = []
 
         if entry and abs(price - entry) / entry <= threshold:
@@ -364,7 +364,7 @@ def check_analyst_level_alerts(payload: dict) -> None:
 
         if support and price <= support * (1 + threshold):
             diff_pct = round((price / support - 1) * 100, 2)
-            if diff_pct <= 2:
+            if diff_pct <= 3.5:
                 direction = "🟢 Destek seviyesinde TUTUNUYOR" if price >= support else "🔴 Destek seviyesi KIRILDI!"
                 alerts.append({
                     "type": "DESTEK SEVİYESİ",
@@ -376,7 +376,7 @@ def check_analyst_level_alerts(payload: dict) -> None:
 
         if resistance and price >= resistance * (1 - threshold):
             diff_pct = round((price / resistance - 1) * 100, 2)
-            if diff_pct >= -2:
+            if diff_pct >= -3.5:
                 direction = "🟢 Direnç seviyesi KIRILDI! Yukarı yön açıldı" if price >= resistance else "🟡 Direnç seviyesine YAKIN, satıcı gelebilir"
                 alerts.append({
                     "type": "DİRENÇ SEVİYESİ",
@@ -560,16 +560,16 @@ def check_intraday_price_movements(payload: dict) -> None:
         prev_close = float(prev_close)
         change_pct = round((price / prev_close - 1) * 100, 2)
 
-        # Triggers for +2.0%, +4.0%, +6.0%, and -3.0%
+        # Triggers for +1.0%, +2.5%, +4.5%, and -2.0%
         levels = []
-        if change_pct >= 6.0:
-            levels.append(("+6%", "🚀 *GÜÇLÜ RALLİ HAREKETİ*"))
-        elif change_pct >= 4.0:
-            levels.append(("+4%", "🔥 *SEANS İÇİ İVME KAZANDI*"))
-        elif change_pct >= 2.0:
-            levels.append(("+2%", "📈 *POZİTİF YÜKSELİŞ HAREKETİ*"))
-        elif change_pct <= -3.0:
-            levels.append(("-3%", "⚠️ *SEANS İÇİ GERİ ÇEKİLME*"))
+        if change_pct >= 4.5:
+            levels.append(("+4.5%", "🚀 *GÜÇLÜ RALLİ HAREKETİ*"))
+        elif change_pct >= 2.5:
+            levels.append(("+2.5%", "🔥 *SEANS İÇİ İVME KAZANDI*"))
+        elif change_pct >= 1.0:
+            levels.append(("+1%", "📈 *POZİTİF YÜKSELİŞ HAREKETİ*"))
+        elif change_pct <= -2.0:
+            levels.append(("-2%", "⚠️ *SEANS İÇİ GERİ ÇEKİLME*"))
 
         for pct_tag, title in levels:
             alert_key = f"move_{ticker}_{pct_tag}_{today_str}"
@@ -603,7 +603,7 @@ COMMODITY_MAPPING = [
         "name": "Altın",
         "macro_label": "ONS ALTIN ($)",
         "icon": "🟡",
-        "min_move": 0.7,
+        "min_move": 0.4,
         "related": [
             {"ticker": "TRALT", "name": "Türk Altın İşletmeleri"},
             {"ticker": "CVKMD", "name": "CVK Maden İşletmeleri"},
@@ -616,7 +616,7 @@ COMMODITY_MAPPING = [
         "name": "Gümüş",
         "macro_label": "ONS GÜMÜŞ ($)",
         "icon": "⚪",
-        "min_move": 0.8,
+        "min_move": 0.5,
         "related": [
             {"ticker": "TRALT", "name": "Türk Altın İşletmeleri"},
             {"ticker": "EUREN", "name": "Europen Endüstri"},
@@ -627,7 +627,7 @@ COMMODITY_MAPPING = [
         "name": "Bakır",
         "macro_label": "BAKIR ($)",
         "icon": "🔴",
-        "min_move": 0.8,
+        "min_move": 0.5,
         "related": [
             {"ticker": "PRKME", "name": "Park Elektrik Üretim Madencilik"},
             {"ticker": "PRKAB", "name": "Türk Prysmian Kablo (Bakır)"},
@@ -641,7 +641,7 @@ COMMODITY_MAPPING = [
         "name": "Brent Petrol",
         "macro_label": "BRENT PETROL ($)",
         "icon": "🛢️",
-        "min_move": 1.2,
+        "min_move": 0.8,
         "related": [
             {"ticker": "TUPRS", "name": "Tüpraş"},
             {"ticker": "PETKM", "name": "Petkim"},
