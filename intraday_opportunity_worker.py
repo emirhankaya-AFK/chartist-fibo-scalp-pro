@@ -603,7 +603,7 @@ COMMODITY_MAPPING = [
         "name": "Altın",
         "macro_label": "ONS ALTIN ($)",
         "icon": "🟡",
-        "min_move": 0.4,
+        "min_move": 0.3,
         "related": [
             {"ticker": "TRALT", "name": "Türk Altın İşletmeleri"},
             {"ticker": "ICUGS", "name": "İşıklar Enerji (Altın Madenciliği)"},
@@ -618,7 +618,7 @@ COMMODITY_MAPPING = [
         "name": "Gümüş",
         "macro_label": "ONS GÜMÜŞ ($)",
         "icon": "⚪",
-        "min_move": 0.5,
+        "min_move": 0.4,
         "related": [
             {"ticker": "TRALT", "name": "Türk Altın İşletmeleri"},
             {"ticker": "EUREN", "name": "Europen Endüstri"},
@@ -629,7 +629,7 @@ COMMODITY_MAPPING = [
         "name": "Bakır",
         "macro_label": "BAKIR ($)",
         "icon": "🔴",
-        "min_move": 0.5,
+        "min_move": 0.4,
         "related": [
             {"ticker": "PRKME", "name": "Park Elektrik Üretim Madencilik"},
             {"ticker": "PRKAB", "name": "Türk Prysmian Kablo (Bakır)"},
@@ -643,12 +643,14 @@ COMMODITY_MAPPING = [
         "name": "Brent Petrol",
         "macro_label": "BRENT PETROL ($)",
         "icon": "🛢️",
-        "min_move": 0.8,
+        "min_move": 0.4,
         "related": [
-            {"ticker": "TUPRS", "name": "Tüpraş"},
-            {"ticker": "PETKM", "name": "Petkim"},
-            {"ticker": "THYAO", "name": "Türk Hava Yolları"},
-            {"ticker": "PGSUS", "name": "Pegasus"}
+            {"ticker": "TUPRS", "name": "Tüpraş (Rafineri Marjı)"},
+            {"ticker": "PETKM", "name": "Petkim (Petrokimya)"},
+            {"ticker": "TUKAS", "name": "Tukaş Gıda (Tarım & Lojistik Yakıt)"},
+            {"ticker": "FROTO", "name": "Ford Otosan (Lojistik & Akaryakıt)"},
+            {"ticker": "THYAO", "name": "Türk Hava Yolları (Jet Yakıtı)"},
+            {"ticker": "PGSUS", "name": "Pegasus (Jet Yakıtı)"}
         ]
     }
 ]
