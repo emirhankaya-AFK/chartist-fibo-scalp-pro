@@ -26,10 +26,10 @@
   {
     "ticker": "DOFRB",
     "name": "Dof Robotik Sanayi A.Ş.",
-    "entry_level": 75.0,
-    "current_live_price": 151.8,
-    "performance": "+102.40%",
-    "note": "[Oğuz Analizi] 75₺'den 90₺ ve 107.60₺ seviyesine hareket."
+    "entry_level": 134.0,
+    "current_live_price": 140.3,
+    "performance": "+4.70%",
+    "note": "[Oğuz Telegram] Dofrb 134₺ bakılabilir. 140.30₺ direnç seviyesi."
   },
   {
     "ticker": "MEYSU",
@@ -66,10 +66,10 @@
   {
     "ticker": "NETCD",
     "name": "Netcad Yazılım A.Ş.",
-    "entry_level": 126.4,
-    "current_live_price": 128.4,
-    "performance": "+1.58%",
-    "note": "[Oğuz Telegram] Netcd 126,40₺ tradelik takip edilebilir."
+    "entry_level": 128.0,
+    "current_live_price": 148.0,
+    "performance": "+15.62%",
+    "note": "[Oğuz Telegram] Netcd 128₺ değerlendirilebilir (148₺ tavan hareketi)."
   },
   {
     "ticker": "ASTOR",
@@ -234,10 +234,10 @@
   {
     "ticker": "PRKME",
     "name": "Park Elektrik Üretim Madencilik A.Ş.",
-    "entry_level": 17.84,
-    "current_live_price": 19.11,
-    "performance": "+7.12%",
-    "note": "[Oğuz Telegram] Alıp satanlar Prkme 17,84₺ bakabilir. Bakır ve Madencilik takibi."
+    "entry_level": 18.4,
+    "current_live_price": 19.65,
+    "performance": "+6.79%",
+    "note": "[Oğuz Telegram / Bakır Takip] Açılışta Prkme 18,40₺ bakabilirsiniz (%9 kazanç)."
   },
   {
     "ticker": "BETAE",
@@ -398,5 +398,13 @@
     "current_live_price": 5.26,
     "performance": "+5.20%",
     "note": "[Oğuz Telegram] Fonet 5₺ buradan tradelik bakılabilir."
+  },
+  {
+    "ticker": "ENDAE",
+    "name": "Enda Enerji Holding A.Ş.",
+    "entry_level": 15.0,
+    "current_live_price": 16.71,
+    "performance": "+11.40%",
+    "note": "[Oğuz Telegram] Endae 15₺'ye değerse mutlaka değerlendirilebilir (%11 prim)."
   }
 ]
