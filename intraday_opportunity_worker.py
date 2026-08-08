@@ -542,7 +542,8 @@ def check_and_send_scheduled_summaries(payload: dict) -> None:
 
 
 def check_intraday_price_movements(payload: dict) -> None:
-    """Check if any tracked stock has significant intraday price movements (e.g. >= 2% gain/loss) and push alerts."""
+    """Check if any tracked stock has reached a new 0.5% gain/loss milestone (+1.0%, +1.5%, +2.0%, +2.5%, etc.) and push alerts."""
+    import math
     state = _load_state()
     today_str = get_tr_now().strftime("%Y-%m-%d")
     changed = False
@@ -560,19 +561,35 @@ def check_intraday_price_movements(payload: dict) -> None:
         prev_close = float(prev_close)
         change_pct = round((price / prev_close - 1) * 100, 2)
 
-        # Triggers for +2.0%, +4.0%, +6.0%, and -3.0% (High conviction moves only)
-        levels = []
-        if change_pct >= 6.0:
-            levels.append(("+6%", "🚀 *GÜÇLÜ RALLİ HAREKETİ*"))
-        elif change_pct >= 4.0:
-            levels.append(("+4%", "🔥 *SEANS İÇİ İVME KAZANDI*"))
-        elif change_pct >= 2.0:
-            levels.append(("+2%", "📈 *POZİTİF YÜKSELİŞ HAREKETİ*"))
-        elif change_pct <= -3.0:
-            levels.append(("-3%", "⚠️ *SEANS İÇİ GERİ ÇEKİLME*"))
+        steps = []
+        # Positive gain steps starting from +1.0% with 0.5% increments
+        if change_pct >= 1.0:
+            current_step = round(math.floor(change_pct * 2.0) / 2.0, 1)
+            step_val = 1.0
+            while step_val <= current_step:
+                if step_val >= 5.0:
+                    emoji_title = "🚀 *GÜÇLÜ RALLİ HAREKETİ*"
+                elif step_val >= 3.0:
+                    emoji_title = "🔥 *YÜKSEK İVME KAZANDI*"
+                elif step_val >= 2.0:
+                    emoji_title = "📈 *POZİTİF YÜKSELİŞ HAREKETİ*"
+                else:
+                    emoji_title = "📊 *KAZANÇ EŞİĞİ AŞILDI*"
+                
+                steps.append((step_val, emoji_title))
+                step_val = round(step_val + 0.5, 1)
 
-        for pct_tag, title in levels:
-            alert_key = f"move_{ticker}_{pct_tag}_{today_str}"
+        # Downside retreat steps starting from -2.0% with 0.5% increments
+        elif change_pct <= -2.0:
+            current_step = round(math.ceil(change_pct * 2.0) / 2.0, 1)
+            step_val = -2.0
+            while step_val >= current_step:
+                steps.append((step_val, "⚠️ *SEANS İÇİ GERİ ÇEKİLME*"))
+                step_val = round(step_val - 0.5, 1)
+
+        for step_val, title in steps:
+            tag_str = f"{step_val:+.1f}%"
+            alert_key = f"move_step_{ticker}_{tag_str}_{today_str}"
             if state.get(alert_key):
                 continue
 
@@ -581,7 +598,7 @@ def check_intraday_price_movements(payload: dict) -> None:
             note_str = next((n.get("Alarm Açıklaması / Talimatı") or n.get("Özel Açıklamalar / Analiz Notları") for n in notes if n.get("Alarm Açıklaması / Talimatı") or n.get("Özel Açıklamalar / Analiz Notları")), "Model Takibi")
 
             message = (
-                f"{title}\n\n"
+                f"{title} (Eşik: %{step_val:+.1f})\n\n"
                 f"📌 *Hisse:* #{ticker}\n"
                 f"💵 *Güncel Fiyat:* {price:.2f} TL (Günlük: %{change_pct:+.2f})\n"
                 f"⭐ *Model Puanı:* {model_score}\n"
