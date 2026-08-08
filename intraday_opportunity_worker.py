@@ -725,7 +725,7 @@ def check_opening_diagnostic_alert(payload: dict) -> None:
 
 
 def check_commodity_correlation_alerts(payload: dict) -> None:
-    """Check commodity price movements (Gold, Silver, Petrol, Copper) and alert on lagging related stock reactions."""
+    """Check commodity price movements (Gold, Silver, Petrol, Copper) and send comprehensive relative performance alerts comparing commodity vs stock movements."""
     market_board = payload.get("marketBoard", [])
     if not market_board:
         return
@@ -744,7 +744,16 @@ def check_commodity_correlation_alerts(payload: dict) -> None:
         comm_pct = float(macro_item["daily"])
         comm_val = float(macro_item["value"])
 
-        if comm_pct >= comm["min_move"]:
+        # Check if commodity moved significantly (e.g. >= 1.0%)
+        if abs(comm_pct) >= comm["min_move"]:
+            alert_key = f"comm_rel_group_{comm['name']}_{today_str}"
+            if state.get(alert_key):
+                continue
+
+            stock_lines = []
+            lagging_stocks = []
+            leading_stocks = []
+
             for rel in comm["related"]:
                 ticker = rel["ticker"]
                 stock_obj = stocks_dict.get(ticker)
@@ -754,25 +763,45 @@ def check_commodity_correlation_alerts(payload: dict) -> None:
                 stock_price = float(stock_obj.get("price", 0))
                 stock_pct = float(stock_obj.get("daily", 0) or 0)
 
-                # Alert if commodity rose strongly (e.g. +1%) but stock lagged behind (< +0.5%)
-                if stock_pct < (comm_pct * 0.5):
-                    alert_key = f"comm_{comm['name']}_{ticker}_{today_str}"
-                    if state.get(alert_key):
-                        continue
+                if stock_pct >= comm_pct:
+                    tag = "🚀 (Önden Tepki)"
+                    leading_stocks.append(f"#{ticker} (*%{stock_pct:+.2f}*)")
+                elif stock_pct < (comm_pct * 0.5):
+                    tag = "⚡ (GECİKMELİ FIRSAT)"
+                    lagging_stocks.append(f"#{ticker} (*%{stock_pct:+.2f}*)")
+                else:
+                    tag = "📈 (Paralel Tepki)"
 
-                    title = f"{comm['icon']} *EMTİA KORELASYON & GECİKMELİ TEPKİ ALARMI*"
-                    message = (
-                        f"{title}\n\n"
-                        f"📊 *Emtia:* {comm['name']} ({macro_item['label']}) -> *%{comm_pct:+.2f}* Yükselişte! ({comm_val:.2f})\n"
-                        f"📌 *Etkileşimli Hisse:* #{ticker} ({rel['name']})\n"
-                        f"💵 *Hisse Fiyatı:* {stock_price:.2f} TL (Günlük: *%{stock_pct:+.2f}*)\n\n"
-                        f"⚡ *Durum:* {comm['name']} yükselirken #{ticker} henüz beklenen tepkiyi vermedi (Gecikmeli Yükseliş Potansiyeli)!"
-                    )
+                stock_lines.append(f"  • *#{ticker}* ({rel['name']}): {stock_price:.2f} TL | Günlük: *%{stock_pct:+.2f}* {tag}")
 
-                    delivered = _notify(message)
-                    if delivered:
-                        state[alert_key] = True
-                        changed = True
+            if not stock_lines:
+                continue
+
+            # Build comparison insights
+            insights = []
+            if leading_stocks:
+                insights.append(f"• {comm['name']} *%{comm_pct:+.2f}* iken {', '.join(leading_stocks)} önden güçlü yükseldi.")
+            if lagging_stocks:
+                insights.append(f"• ⚡ *GECİKMELİ TEPKİ FIRSATI:* {', '.join(lagging_stocks)} henüz yükselişe beklenen tepkiyi vermedi! (Potansiyel Yakalama Hareketi)")
+            if not insights:
+                insights.append(f"• İlişkili tüm hisseler {comm['name']} hareketine paralel tepki veriyor.")
+
+            insight_text = "\n".join(insights)
+            stock_block = "\n".join(stock_lines)
+
+            title = f"{comm['icon']} *EMTİA KORELASYON & GÖRELİ PERFORMANS ALARMI*"
+            message = (
+                f"{title}\n\n"
+                f"📊 *Canlı Emtia Fiyatı:* {comm['name']} ({macro_item['label']})\n"
+                f"💵 *Seviye:* {comm_val:,.2f} $ (Günlük Değişim: *%{comm_pct:+.2f}*)\n\n"
+                f"🔗 *İlişkili Hisselerin Güncel Fiyat & Performansları:*\n{stock_block}\n\n"
+                f"💡 *Korelasyon & Kıyaslama Analizi:*\n{insight_text}"
+            )
+
+            delivered = _notify(message)
+            if delivered:
+                state[alert_key] = True
+                changed = True
 
     if changed:
         _save_state(state)
