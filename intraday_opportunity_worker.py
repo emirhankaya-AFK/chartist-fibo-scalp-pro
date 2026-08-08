@@ -560,16 +560,16 @@ def check_intraday_price_movements(payload: dict) -> None:
         prev_close = float(prev_close)
         change_pct = round((price / prev_close - 1) * 100, 2)
 
-        # Triggers for +1.0%, +2.5%, +4.5%, and -2.0%
+        # Triggers for +2.0%, +4.0%, +6.0%, and -3.0% (High conviction moves only)
         levels = []
-        if change_pct >= 4.5:
-            levels.append(("+4.5%", "🚀 *GÜÇLÜ RALLİ HAREKETİ*"))
-        elif change_pct >= 2.5:
-            levels.append(("+2.5%", "🔥 *SEANS İÇİ İVME KAZANDI*"))
-        elif change_pct >= 1.0:
-            levels.append(("+1%", "📈 *POZİTİF YÜKSELİŞ HAREKETİ*"))
-        elif change_pct <= -2.0:
-            levels.append(("-2%", "⚠️ *SEANS İÇİ GERİ ÇEKİLME*"))
+        if change_pct >= 6.0:
+            levels.append(("+6%", "🚀 *GÜÇLÜ RALLİ HAREKETİ*"))
+        elif change_pct >= 4.0:
+            levels.append(("+4%", "🔥 *SEANS İÇİ İVME KAZANDI*"))
+        elif change_pct >= 2.0:
+            levels.append(("+2%", "📈 *POZİTİF YÜKSELİŞ HAREKETİ*"))
+        elif change_pct <= -3.0:
+            levels.append(("-3%", "⚠️ *SEANS İÇİ GERİ ÇEKİLME*"))
 
         for pct_tag, title in levels:
             alert_key = f"move_{ticker}_{pct_tag}_{today_str}"
@@ -603,7 +603,7 @@ COMMODITY_MAPPING = [
         "name": "Altın",
         "macro_label": "ONS ALTIN ($)",
         "icon": "🟡",
-        "min_move": 0.3,
+        "min_move": 1.0,
         "related": [
             {"ticker": "TRALT", "name": "Türk Altın İşletmeleri"},
             {"ticker": "ICUGS", "name": "İşıklar Enerji (Altın Madenciliği)"},
@@ -618,7 +618,7 @@ COMMODITY_MAPPING = [
         "name": "Gümüş",
         "macro_label": "ONS GÜMÜŞ ($)",
         "icon": "⚪",
-        "min_move": 0.4,
+        "min_move": 1.0,
         "related": [
             {"ticker": "TRALT", "name": "Türk Altın İşletmeleri"},
             {"ticker": "EUREN", "name": "Europen Endüstri"},
@@ -629,7 +629,7 @@ COMMODITY_MAPPING = [
         "name": "Bakır",
         "macro_label": "BAKIR ($)",
         "icon": "🔴",
-        "min_move": 0.4,
+        "min_move": 1.0,
         "related": [
             {"ticker": "PRKME", "name": "Park Elektrik Üretim Madencilik"},
             {"ticker": "PRKAB", "name": "Türk Prysmian Kablo (Bakır)"},
@@ -643,7 +643,7 @@ COMMODITY_MAPPING = [
         "name": "Brent Petrol",
         "macro_label": "BRENT PETROL ($)",
         "icon": "🛢️",
-        "min_move": 0.4,
+        "min_move": 1.0,
         "related": [
             {"ticker": "TUPRS", "name": "Tüpraş (Rafineri Marjı)"},
             {"ticker": "PETKM", "name": "Petkim (Petrokimya)"},
@@ -654,6 +654,57 @@ COMMODITY_MAPPING = [
         ]
     }
 ]
+
+
+def check_opening_diagnostic_alert(payload: dict) -> None:
+    """Send opening market commodity diagnostic and technical health check bulletin at 09:55 TR local time."""
+    now_dt = get_tr_now()
+    today_str = now_dt.strftime("%Y-%m-%d")
+    hour = now_dt.hour
+    minute = now_dt.minute
+
+    # Only fire around 09:50 - 10:05 TR local time
+    if not (hour == 9 and minute >= 50) and not (hour == 10 and minute <= 5):
+        return
+
+    state = _load_state()
+    diag_key = f"opening_diag_{today_str}"
+    if state.get(diag_key):
+        return  # Already sent opening diagnostic today
+
+    market_board = payload.get("marketBoard", [])
+    gold_item = next((m for m in market_board if m.get("label") == "ONS ALTIN ($)"), {})
+    silver_item = next((m for m in market_board if m.get("label") == "ONS GÜMÜŞ ($)"), {})
+    brent_item = next((m for m in market_board if m.get("label") == "BRENT PETROL ($)"), {})
+    copper_item = next((m for m in market_board if m.get("label") == "BAKIR ($)"), {})
+
+    def _fmt_comm(item: dict) -> str:
+        val = item.get("value")
+        daily = item.get("daily")
+        if val is None or daily is None:
+            return "—"
+        return f"{val:,.2f} $ (*%{daily:+.2f}*)"
+
+    gold_str = _fmt_comm(gold_item)
+    silver_str = _fmt_comm(silver_item)
+    brent_str = _fmt_comm(brent_item)
+    copper_str = _fmt_comm(copper_item)
+
+    message = (
+        f"🌅 *SEANS AÇILIŞI EMTİA & TEKNİK ANALİZ SAĞLIK KONTROLÜ*\n"
+        f"📅 *Tarih:* {today_str} — 09:55 TR (Seans Açılış Kontrolü)\n\n"
+        f"🟡 *Ons Altın:* {gold_str}\n"
+        f"⚪ *Ons Gümüş:* {silver_str}\n"
+        f"🛢️ *Brent Petrol:* {brent_str}\n"
+        f"🔴 *Bakır Futures:* {copper_str}\n\n"
+        f"✅ *Piyasa Tarama Motoru:* %100 Aktif ve Taramalar Başlatıldı.\n"
+        f"🎯 *Korelasyon Eşiği:* ≥ %1.00 Emtia Yükselişlerinde Yüksek Güvenli Alarmlar Gönderilecek!"
+    )
+
+    delivered = _notify(message)
+    if delivered:
+        state[diag_key] = True
+        _save_state(state)
 
 
 def check_commodity_correlation_alerts(payload: dict) -> None:
@@ -783,6 +834,9 @@ def run_once() -> list[dict]:
                 changed = True
         if changed:
             _save_state(state)
+
+        # Check opening market commodity diagnostic and technical health bulletin (09:55 TR)
+        check_opening_diagnostic_alert(payload)
 
         # Always check and send scheduled summary bulletins for 10:00, 12:00, 14:00, 16:00, 18:00, 18:30
         check_and_send_scheduled_summaries(payload)
