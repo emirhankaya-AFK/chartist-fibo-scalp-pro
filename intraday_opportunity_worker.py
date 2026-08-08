@@ -647,7 +647,7 @@ COMMODITY_MAPPING = [
         "related": [
             {"ticker": "TUPRS", "name": "Tüpraş (Rafineri Marjı)"},
             {"ticker": "PETKM", "name": "Petkim (Petrokimya)"},
-            {"ticker": "TUKAS", "name": "Tukaş Gıda (Tarım & Lojistik Yakıt)"},
+            {"ticker": "TRCAS", "name": "Turcas Petrol (Akaryakıt & Enerji Dağıtım)"},
             {"ticker": "FROTO", "name": "Ford Otosan (Lojistik & Akaryakıt)"},
             {"ticker": "THYAO", "name": "Türk Hava Yolları (Jet Yakıtı)"},
             {"ticker": "PGSUS", "name": "Pegasus (Jet Yakıtı)"}
