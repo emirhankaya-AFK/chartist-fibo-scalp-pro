@@ -606,6 +606,7 @@ COMMODITY_MAPPING = [
         "min_move": 0.4,
         "related": [
             {"ticker": "TRALT", "name": "Türk Altın İşletmeleri"},
+            {"ticker": "ICUGS", "name": "İşıklar Enerji (Altın Madenciliği)"},
             {"ticker": "CVKMD", "name": "CVK Maden İşletmeleri"},
             {"ticker": "KOZAL", "name": "Koza Altın"},
             {"ticker": "KOZAA", "name": "Koza Anadolu"},

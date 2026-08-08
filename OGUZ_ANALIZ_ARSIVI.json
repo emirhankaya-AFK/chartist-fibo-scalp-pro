@@ -194,10 +194,10 @@
   {
     "ticker": "EKDMR",
     "name": "Ekinciler Demir ve Çelik Sanayi A.Ş.",
-    "entry_level": 48.4,
-    "current_live_price": 49.2,
-    "performance": "+1.65%",
-    "note": "[Oğuz Telegram] Ekdmr 48,40₺ / 49.00₺ tekrar tradelik bakılabilir."
+    "entry_level": 47.3,
+    "current_live_price": 46.74,
+    "performance": "-1.18%",
+    "note": "[Oğuz Telegram] Ekdmr 47,30₺ bakılabilir."
   },
   {
     "ticker": "MOGAN",
@@ -346,10 +346,10 @@
   {
     "ticker": "ARFYE",
     "name": "Arf Bio Enerji Sanayi A.Ş.",
-    "entry_level": 29.2,
-    "current_live_price": 29.82,
-    "performance": "+2.12%",
-    "note": "[Oğuz Telegram] Arfye 29,20₺ Güzel tepki verebilir."
+    "entry_level": 29.0,
+    "current_live_price": 32.5,
+    "performance": "+12.07%",
+    "note": "[Oğuz Telegram] Arfye 29₺ takibi (%14 kazanç)."
   },
   {
     "ticker": "INVEO",
@@ -406,5 +406,21 @@
     "current_live_price": 16.71,
     "performance": "+11.40%",
     "note": "[Oğuz Telegram] Endae 15₺'ye değerse mutlaka değerlendirilebilir (%11 prim)."
+  },
+  {
+    "ticker": "ICUGS",
+    "name": "İşıklar Enerji ve Yapı Holding A.Ş.",
+    "entry_level": 5.42,
+    "current_live_price": 5.42,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram / Altın Madenciliği] İcugs 5,42₺. Altın madenciliği faaliyetleri var, takibe alınabilir."
+  },
+  {
+    "ticker": "CWENE",
+    "name": "Cw Enerji Mühendislik A.Ş.",
+    "entry_level": 200.0,
+    "current_live_price": 280.0,
+    "performance": "+40.00%",
+    "note": "[Oğuz Telegram] Cwene %40 prim takibi."
   }
 ]
