@@ -610,7 +610,8 @@ COMMODITY_MAPPING = [
             {"ticker": "CVKMD", "name": "CVK Maden İşletmeleri"},
             {"ticker": "KOZAL", "name": "Koza Altın"},
             {"ticker": "KOZAA", "name": "Koza Anadolu"},
-            {"ticker": "IPEKE", "name": "İpek Doğal Enerji"}
+            {"ticker": "IPEKE", "name": "İpek Doğal Enerji"},
+            {"ticker": "EREGL", "name": "Ereğli Demir Çelik (Maden & Altın Rezerv)"}
         ]
     },
     {
