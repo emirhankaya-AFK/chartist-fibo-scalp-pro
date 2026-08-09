@@ -479,9 +479,17 @@ def check_and_send_scheduled_summaries(payload: dict) -> None:
     try:
         p_val = float(xu100_price)
         if p_val <= 13850:
-            index_warning = "\n⚠️ *DİKKAT:* Endeks 13.850 TL kritik desteğinde! Aşağı düşerse sonraki durak 12.900 – 13.000 TL olabilir. Yükseliş için 14.250 TL üzerine çıkmalı."
+            index_warning = (
+                "\n⚠️ *DİKKAT (Ahmet Mergen):* Endeks 13.850 TL kritik desteğinde! "
+                "Eğer 13.230 TL desteği de kırılırsa sonraki durak 12.900 TL veya 12.500 TL seviyeleri olabilir. "
+                "Yukarı yönde tepki için 14.250 - 14.254 TL (50 günlük HO) direncinin aşılması gerekir."
+            )
         else:
-            index_warning = f"\nℹ️ *Endeks Durumu:* {p_val:,.2f} TL (13.850 TL kritik destektir; altına düşerse 12.900 TL riski doğar, 14.250 TL üzeri alım teyididir)."
+            index_warning = (
+                f"\nℹ️ *Endeks Analizi (Ahmet Mergen):* {p_val:,.2f} TL. "
+                "14.250 - 14.254 TL direnci aşılırsa yükseliş 14.600 TL veya 14.876 TL seviyelerine doğru yol alabilir. "
+                "13.850 TL altı kapanışlarda ise 13.230 TL ve 12.900 TL destekleri takip edilecektir."
+            )
     except Exception:
         index_warning = ""
 
