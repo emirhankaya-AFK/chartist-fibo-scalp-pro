@@ -339,7 +339,7 @@ def _macro_snapshots(
         "BAKIR ($)": "HG=F",
     }
     try:
-        frame = yf.download(list(symbols.values()), period="5d", interval="1d", group_by="ticker", auto_adjust=False, progress=False, threads=True)
+        frame = yf.download(list(symbols.values()), period="5d", interval="1d", group_by="ticker", auto_adjust=False, progress=False, threads=False)
     except Exception:
         return []
     result = []
@@ -425,7 +425,7 @@ def intraday_commodity_snapshots(force: bool = False) -> list[dict[str, Any]]:
             auto_adjust=False,
             progress=False,
             prepost=True,
-            threads=True,
+            threads=False,
             timeout=20,
         )
     except Exception as exc:
@@ -1348,7 +1348,7 @@ def _download_history(symbols: list[str]) -> pd.DataFrame:
         group_by="ticker",
         auto_adjust=True,
         progress=False,
-        threads=True,
+        threads=False,
     )
 
 
@@ -1407,7 +1407,7 @@ def _download_delayed_quotes(symbols: list[str]) -> dict[str, dict[str, Any]]:
             group_by="ticker",
             auto_adjust=False,
             progress=False,
-            threads=True,
+            threads=False,
         )
     except Exception:
         return {}
