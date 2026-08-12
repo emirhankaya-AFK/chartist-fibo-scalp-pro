@@ -401,6 +401,7 @@ function renderTable() {
       state.selectedTicker = row.dataset.ticker;
       renderTable();
       renderDetail();
+      openSignalPopup(row.dataset.ticker);
     });
   });
 
@@ -415,6 +416,52 @@ function renderTable() {
   if (selectionChanged) renderDetail();
   if (!visibleStocks.length) renderEmptyDetail();
 }
+
+function openSignalPopup(ticker = state.selectedTicker) {
+  const stock = stocks.find((item) => item.ticker === ticker);
+  if (!stock) return;
+  const popup = document.getElementById("signalPopup");
+  const analysis = positionAnalysis(stock);
+  const notes = stock.analystNotes || [];
+  const evidence = stock.strategyEvidence?.[stock.strategy] || [];
+  const consensus = (stock.badges || []).filter((badge) => badge.includes("ÇAO") || badge.includes("SK3") || badge.includes("KONSENSÜS"));
+  const note = notes.map((item) => item["Özel Açıklamalar / Analiz Notları"] || item["Alarm Açıklaması / Talimatı"]).find(Boolean);
+  const entryMove = entryDistance(stock);
+  const action = stock.recommendation === "OPEN" ? "Giriş bölgesi uygun — plan dahilinde değerlendir" : stock.recommendation === "WATCH" ? "Bekle / teyit bekle" : "Yeni giriş açma";
+  document.getElementById("popupKicker").textContent = stock.recommendation === "OPEN" ? "MODEL FIRSAT SİNYALİ" : "CANLI TAKİP SİNYALİ";
+  document.getElementById("popupTitle").textContent = stock.ticker;
+  document.getElementById("popupCompany").textContent = stock.company;
+  document.getElementById("popupAlert").textContent = `${action} · Günlük ${stock.daily >= 0 ? "+" : ""}${formatNumber(stock.daily)}%`;
+  document.getElementById("popupConsensus").textContent = consensus.length ? `🔥 ${consensus.join(" · ")}` : "Tekli algoritma sinyali · konsensüs bekleniyor";
+  document.getElementById("popupStrategy").textContent = `📊 ALGORİTMA / STRATEJİ  ·  ${stock.strategy}`;
+  document.getElementById("popupDirection").textContent = stock.recommendation === "AVOID" ? "🔴 SHORT / RİSKLİ POZİSYON" : "🟢 LONG (Alış / AI Pozisyonu)";
+  document.getElementById("popupTicker").textContent = stock.ticker;
+  document.getElementById("popupPeriod").textContent = stock.period || "1D";
+  document.getElementById("popupEntry").textContent = formatCurrency(stock.entry);
+  document.getElementById("popupPrice").textContent = formatCurrency(stock.price);
+  document.getElementById("popupScore").textContent = formatNumber(analysis.score, 1);
+  document.getElementById("popupConfidence").textContent = `%${formatNumber(modelConfidence(stock), 0)}`;
+  document.getElementById("popupStop").textContent = formatCurrency(stock.stop);
+  document.getElementById("popupTp1").textContent = formatCurrency(stock.targets?.[0]);
+  document.getElementById("popupTp2").textContent = formatCurrency(stock.targets?.[1]);
+  document.getElementById("popupTp3").textContent = formatCurrency(stock.targets?.[2]);
+  document.getElementById("popupStats").textContent = `Giriş mesafesi ${entryMove >= 0 ? "+" : ""}${formatNumber(entryMove)}%  ·  R/R ${formatNumber(stock.rr)}  ·  Master ${formatNumber(stock.master, 0)}  ·  Teknik ${formatNumber(analysis.technical, 0)}`;
+  document.getElementById("popupNote").textContent = note || `${evidence.join(" · ") || "Model göstergeleri izleniyor."}${stock.priceTimestamp ? ` · Veri: ${new Date(stock.priceTimestamp).toLocaleString("tr-TR")}` : ""}`;
+  document.getElementById("popupOpenPlan").onclick = () => { popup.classList.remove("open"); popup.setAttribute("aria-hidden", "true"); renderPlanModal(); document.getElementById("planModal")?.classList.add("open"); };
+  popup.classList.add("open");
+  popup.setAttribute("aria-hidden", "false");
+}
+
+document.getElementById("signalPopupClose")?.addEventListener("click", () => {
+  const popup = document.getElementById("signalPopup");
+  popup?.classList.remove("open");
+  popup?.setAttribute("aria-hidden", "true");
+});
+document.getElementById("signalPopup")?.addEventListener("click", (event) => {
+  if (event.target.id !== "signalPopup") return;
+  event.currentTarget.classList.remove("open");
+  event.currentTarget.setAttribute("aria-hidden", "true");
+});
 
 function renderEmptyDetail() {
   state.selectedTicker = "";
@@ -1281,16 +1328,27 @@ function updateMarketMeta(payload) {
   marketPayload = payload;
   const index = payload.index;
   const summary = payload.summary;
+  const quoteDate = payload.displayQuoteDate || payload.dataDate;
+  const technicalDate = payload.technicalDataDate || payload.dataDate;
   document.getElementById("signalDataBadge").innerHTML = payload.staleData
-    ? `<i></i> SON BAŞARILI VERİ · ${payload.dataDate}`
-    : `<i></i> RESMÎ KAPANIŞ · ${payload.dataDate}`;
+    ? `<i></i> FİYAT ${escapeHtml(quoteDate || "—")} · TEKNİK ANALİZ ${escapeHtml(technicalDate || "—")} (ESKİ)`
+    : `<i></i> RESMÎ KAPANIŞ · ${escapeHtml(payload.dataDate)}`;
   document.getElementById("signalDataBadge").title = `${payload.source} · ${payload.delayNotice}`;
   document.getElementById("sidebarDataState").textContent = payload.staleData
-    ? "Son başarılı veri gösteriliyor"
+    ? payload.displayPriceCurrent ? "Fiyat güncel · teknik analiz eski" : "Eski veri · fiyat yenilenemedi"
     : payload.quoteMode === "15m-delayed-display" ? "Kapanış + 15dk izleme" : "Resmî kapanış doğrulandı";
   document.getElementById("sidebarDelay").textContent = payload.quoteMode === "15m-delayed-display" ? "15 dk gecikmeli" : "Gün sonu";
-  document.getElementById("dashboardDate").textContent =
-    `${new Date(`${payload.dataDate}T12:00:00`).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" }).toLocaleUpperCase("tr-TR")} · RESMÎ KAPANIŞ`;
+  document.getElementById("dashboardDate").textContent = payload.staleData
+    ? `FİYAT ZAMANI: ${escapeHtml(payload.displayQuoteAt || "ALINAMADI")} · TEKNİK MODEL: ${escapeHtml(technicalDate || "—")} (ESKİ)`
+    : `${new Date(`${payload.dataDate}T12:00:00`).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" }).toLocaleUpperCase("tr-TR")} · RESMÎ KAPANIŞ`;
+  const freshnessWarning = document.getElementById("dataFreshnessWarning");
+  const freshnessText = document.getElementById("dataFreshnessWarningText");
+  if (freshnessWarning && freshnessText) {
+    freshnessWarning.hidden = !payload.staleData;
+    freshnessText.textContent = payload.displayPriceCurrent
+      ? `Fiyatlar ${payload.displayQuoteAt || "son alınan zaman"} itibarıyla yenilendi; teknik model ${technicalDate || "—"} tarihli. Model puanı ve giriş sinyallerini yeni tarama tamamlanana kadar kullanma.`
+      : `Hem fiyat hem teknik model eski. Son teknik tarih ${technicalDate || "—"}; veri yenilenene kadar işlem kararı verme.`;
+  }
   document.getElementById("activeSignalCount").textContent = summary.open;
   document.getElementById("openSignalCount").textContent = summary.open;
   document.getElementById("watchSignalCount").textContent = summary.watch;
@@ -1311,6 +1369,99 @@ function updateMarketMeta(payload) {
       return `<span class="marquee-item" title="${escapeHtml(item.source || "")} · ${escapeHtml(item.timestamp || "")}">${escapeHtml(item.label)} <b>${formatNumber(item.value, item.label.includes("TRY") ? 4 : 2)}</b> ${daily}</span>`;
     });
     board.innerHTML = items.length ? [...items, ...items].join("") : `<span class="marquee-item">Makro veri bekleniyor</span>`;
+  }
+}
+
+let commodityGroupsLoading = false;
+
+function commodityRelationMeta(relationship) {
+  if (relationship === "same") return { label: "AYNI YÖN", className: "same" };
+  if (relationship === "inverse") return { label: "TERS ETKİ", className: "inverse" };
+  if (relationship === "mixed") return { label: "KARMA ETKİ", className: "mixed" };
+  return { label: "DOLAYLI", className: "indirect" };
+}
+
+function renderCommodityGroups(payload) {
+  const grid = document.getElementById("commodityGroupsGrid");
+  const status = document.getElementById("commodityGroupsStatus");
+  if (!grid || !status) return;
+
+  const order = ["Brent Petrol", "Altın", "Gümüş", "Bakır"];
+  const groups = Array.isArray(payload.groups)
+    ? payload.groups.slice().sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name))
+    : [];
+  const generatedAt = payload.generatedAt
+    ? new Date(payload.generatedAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
+    : "—";
+  status.textContent = groups.length ? `${groups.length} GRUP · ${generatedAt}` : "VERİ BEKLENİYOR";
+  status.classList.toggle("positive", groups.length > 0);
+
+  grid.innerHTML = groups.length ? groups.map((group) => {
+    const macro = group.commodity || {};
+    const daily = Number(macro.daily);
+    const hasDaily = Number.isFinite(daily);
+    const shortChange = Number(macro.shortChange);
+    const hasShort = Number.isFinite(shortChange);
+    const dailyClass = hasDaily ? (daily >= 0 ? "positive" : "negative") : "neutral";
+    const members = Array.isArray(group.members) ? group.members : [];
+    const sourceTitle = `${macro.source || "Kaynak bekleniyor"} · ${macro.timestamp || "Zaman yok"}`;
+
+    return `<article class="commodity-group-card" data-group="${escapeHtml(group.name)}">
+      <header class="commodity-card-head">
+        <span class="commodity-card-icon" aria-hidden="true">${escapeHtml(group.icon)}</span>
+        <div class="commodity-card-title">
+          <small>${escapeHtml(group.label)}</small>
+          <h3>${escapeHtml(group.name)}</h3>
+        </div>
+        <div class="commodity-card-quote" title="${escapeHtml(sourceTitle)}">
+          <strong>${formatNumber(macro.value)}</strong>
+          <span class="${dailyClass}">${hasDaily ? `${daily >= 0 ? "+" : ""}${formatNumber(daily, 2)}%` : "—"}</span>
+        </div>
+      </header>
+      <div class="commodity-trigger-strip">
+        <span>Alarm eşiği <b>+${formatNumber(group.alertThreshold, 1)}%</b></span>
+        <span>15 dk hareket <b class="${hasShort ? (shortChange >= 0 ? "positive" : "negative") : ""}">${hasShort ? `${shortChange >= 0 ? "+" : ""}${formatNumber(shortChange, 2)}%` : "—"}</b></span>
+      </div>
+      <p class="commodity-description">${escapeHtml(group.description)}</p>
+      <div class="commodity-member-list">
+        ${members.map((member) => {
+          const relation = commodityRelationMeta(member.relationship);
+          const memberDaily = Number(member.daily);
+          const hasMemberDaily = Number.isFinite(memberDaily);
+          const price = Number(member.price);
+          const hasPrice = Number.isFinite(price);
+          const reactionTone = ["positive", "negative", "warning", "neutral"].includes(member.reactionTone) ? member.reactionTone : "neutral";
+          return `<button class="commodity-stock-row" type="button" data-commodity-ticker="${escapeHtml(member.ticker)}" title="${escapeHtml(member.impact)}">
+            <span class="commodity-stock-main"><b>#${escapeHtml(member.ticker)}</b><small>${escapeHtml(member.name)}</small></span>
+            <span class="commodity-relation ${relation.className}">${relation.label}</span>
+            <span class="commodity-stock-price"><b>${hasPrice ? formatCurrency(price) : "—"}</b><small class="${hasMemberDaily ? (memberDaily >= 0 ? "positive" : "negative") : ""}">${hasMemberDaily ? `${memberDaily >= 0 ? "+" : ""}${formatNumber(memberDaily, 2)}%` : "veri bekleniyor"}</small></span>
+            <span class="commodity-reaction ${reactionTone}">${escapeHtml(member.reaction)}</span>
+          </button>`;
+        }).join("")}
+      </div>
+      <footer>${escapeHtml(macro.timestamp || "Emtia zamanı bekleniyor")} · Hisseler yaklaşık 15 dk gecikmeli</footer>
+    </article>`;
+  }).join("") : `<article class="commodity-loading-card">Emtia grup verisi henüz alınamadı. Yenile düğmesiyle tekrar deneyebilirsin.</article>`;
+}
+
+async function loadCommodityGroups(force = false) {
+  if (commodityGroupsLoading) return;
+  commodityGroupsLoading = true;
+  const status = document.getElementById("commodityGroupsStatus");
+  if (status) status.textContent = force ? "YENİLENİYOR" : "YÜKLENİYOR";
+  try {
+    const response = await fetch(`/api/commodity-groups${force ? "?refresh=1" : ""}`, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok || payload.status !== "ok") throw new Error(payload.message || "Emtia grupları alınamadı");
+    renderCommodityGroups(payload);
+  } catch (error) {
+    if (status) {
+      status.textContent = "BAĞLANTI HATASI";
+      status.classList.remove("positive");
+      status.title = error.message;
+    }
+  } finally {
+    commodityGroupsLoading = false;
   }
 }
 
@@ -1566,6 +1717,22 @@ async function loadNotificationLog() {
 document.getElementById("analystNotesSearch")?.addEventListener("input", renderExcelNotes);
 document.getElementById("analystSourceFilter")?.addEventListener("change", renderExcelNotes);
 document.getElementById("notificationRefresh")?.addEventListener("click", loadNotificationLog);
+document.getElementById("commodityGroupsRefresh")?.addEventListener("click", () => loadCommodityGroups(true));
+document.getElementById("commodityGroupsGrid")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-commodity-ticker]");
+  if (!button) return;
+  const ticker = button.dataset.commodityTicker;
+  if (stocks.some((stock) => stock.ticker === ticker)) {
+    state.selectedTicker = ticker;
+    renderTable();
+    renderDetail();
+    document.getElementById("signals")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else {
+    globalSearch.value = ticker;
+    state.query = ticker;
+    renderTable();
+  }
+});
 document.getElementById("excelNotesRows")?.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-track-note]");
   if (!button) return;
@@ -1605,7 +1772,9 @@ initializeMarketData();
 loadAnalystBenchmark();
 loadExcelNotes();
 loadNotificationLog();
+loadCommodityGroups();
 setInterval(refreshMarketData, 5 * 60 * 1000);
+setInterval(loadCommodityGroups, 5 * 60 * 1000);
 
 async function loadAutoPortfolio() {
   try {

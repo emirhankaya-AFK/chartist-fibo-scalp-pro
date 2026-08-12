@@ -18,10 +18,15 @@
   {
     "ticker": "YAYLA",
     "name": "Yayla Enerji Üretim Turizm A.Ş.",
-    "entry_level": 20.9,
-    "current_live_price": 22.34,
-    "performance": "+6.89%",
-    "note": "[Oğuz Telegram] Yayla 20,90₺ tradelik bakabiliriz (%7 prim)."
+    "entry_level": 21.2,
+    "current_live_price": 22.72,
+    "performance": "+7.17%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] YAYLA 21,20 TL takip seviyesi. Ekranda 22,72 TL ve günlük %+5,48 görülmüş; ayrıca '%7,5 burası direnç' yorumu paylaşılmıştır. Yüzde ifadesi TL direnci değildir.",
+    "captured_date": "2026-08-12",
+    "observed_at": "10:11",
+    "observed_session_change_pct": 5.48,
+    "percent_comment": 7.5,
+    "previous_records": [{"entry_level": 20.9, "observed_price": 22.34, "performance": "+6.89%", "note": "[Oğuz Telegram] Yayla 20,90 TL tradelik bakabiliriz (%7 prim)."}]
   },
   {
     "ticker": "DOFRB",
@@ -194,10 +199,15 @@
   {
     "ticker": "EKDMR",
     "name": "Ekinciler Demir ve Çelik Sanayi A.Ş.",
-    "entry_level": 47.3,
-    "current_live_price": 46.74,
-    "performance": "-1.18%",
-    "note": "[Oğuz Telegram] Ekdmr 47,30₺ bakılabilir."
+    "entry_level": 45.52,
+    "current_live_price": 46.7,
+    "performance": "+2.59%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] EKDMR 45,52 TL takip seviyesi. 12:51 civarında 46,40 TL / günlük %+2,43 ve '%2'; 14:03 civarında 46,70 TL / günlük %+3,09 ve '%3' güncellemesi paylaşılmıştır. Yüzdeler seans içi hareket notudur, TL direnç değildir.",
+    "captured_date": "2026-08-12",
+    "observed_at": "14:03",
+    "observed_session_change_pct": 3.09,
+    "percent_milestones": [2.0, 3.0],
+    "previous_records": [{"entry_level": 47.3, "observed_price": 46.74, "performance": "-1.18%", "note": "[Oğuz Telegram] EKDMR 47,30 TL bakılabilir."}]
   },
   {
     "ticker": "MOGAN",
@@ -250,10 +260,16 @@
   {
     "ticker": "ENERY",
     "name": "Enerya Enerji A.Ş.",
-    "entry_level": 8.86,
-    "current_live_price": 11.2,
-    "performance": "+26.41%",
-    "note": "[Oğuz Telegram] Enery 8,86₺ buradan değerlendiriyorum."
+    "entry_level": 8.6,
+    "current_live_price": 9.0,
+    "performance": "+4.65%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] ENERY için 8,60 TL civarına maliyet düşürme seviyesi paylaşıldı. Ekranda 9,00 TL ve günlük %+7,78 görülmüş; '%4,5 burası direnç' yorumu ayrıca kaydedilmiştir. Yüzde ifadesi TL direnci değildir.",
+    "captured_date": "2026-08-12",
+    "observed_at": "10:59",
+    "observed_session_change_pct": 7.78,
+    "percent_comment": 4.5,
+    "level_role": "maliyet düşürme",
+    "previous_records": [{"entry_level": 8.86, "observed_price": 11.2, "performance": "+26.41%", "note": "[Oğuz Telegram] ENERY 8,86 TL buradan değerlendiriyorum."}]
   },
   {
     "ticker": "TRALT",
@@ -378,10 +394,15 @@
   {
     "ticker": "ECOGR",
     "name": "Ecogreen Enerji Holding A.Ş.",
-    "entry_level": 34.4,
-    "current_live_price": 36.32,
-    "performance": "+5.58%",
-    "note": "[Oğuz Telegram] Ecogr 34,40₺ trade verebilir."
+    "entry_level": 34.0,
+    "current_live_price": 35.0,
+    "performance": "+2.94%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] ECOGR 34 TL seviyesine yeniden gelirse bakılabilir. Ekranda 35,00 TL ve günlük %+3,12 görülmüş; '%3 dirençte' yorumu paylaşılmıştır. Yüzde ifadesi TL direnci değildir.",
+    "captured_date": "2026-08-12",
+    "observed_at": "13:32",
+    "observed_session_change_pct": 3.12,
+    "percent_comment": 3.0,
+    "previous_records": [{"entry_level": 34.4, "observed_price": 36.32, "performance": "+5.58%", "note": "[Oğuz Telegram] ECOGR 34,40 TL trade verebilir."}]
   },
   {
     "ticker": "SDTTR",
@@ -395,17 +416,27 @@
     "ticker": "FONET",
     "name": "Fonet Bilgi Teknolojileri A.Ş.",
     "entry_level": 5.0,
-    "current_live_price": 5.26,
-    "performance": "+5.20%",
-    "note": "[Oğuz Telegram] Fonet 5₺ buradan tradelik bakılabilir."
+    "current_live_price": 5.1,
+    "performance": "+2.00%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] Ek olarak FONET 5 TL seviyesinde bakılabilir. Ekranda 5,10 TL ve günlük %+2,00 görülmüş; '%2 civarında' güncellemesi paylaşılmıştır.",
+    "captured_date": "2026-08-12",
+    "observed_at": "10:36",
+    "observed_session_change_pct": 2.0,
+    "percent_comment": 2.0,
+    "previous_records": [{"entry_level": 5.0, "observed_price": 5.26, "performance": "+5.20%", "note": "[Oğuz Telegram] FONET 5 TL buradan tradelik bakılabilir."}]
   },
   {
     "ticker": "ENDAE",
     "name": "Enda Enerji Holding A.Ş.",
     "entry_level": 15.0,
-    "current_live_price": 16.71,
-    "performance": "+11.40%",
-    "note": "[Oğuz Telegram] Endae 15₺'ye değerse mutlaka değerlendirilebilir (%11 prim)."
+    "current_live_price": 18.48,
+    "performance": "+23.20%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] ENDAE 15 TL seviyesine değerse mutlaka değerlendirilebilir. Ekranda 18,48 TL ve günlük %+10,00 görülmüş; '2 seans %21' performans notu paylaşılmıştır.",
+    "captured_date": "2026-08-12",
+    "observed_at": "10:03",
+    "observed_session_change_pct": 10.0,
+    "period_performance_note": "2 seans %+21",
+    "previous_records": [{"entry_level": 15.0, "observed_price": 16.71, "performance": "+11.40%", "note": "[Oğuz Telegram] ENDAE 15 TL'ye değerse mutlaka değerlendirilebilir (%11 prim)."}]
   },
   {
     "ticker": "ICUGS",
@@ -418,9 +449,14 @@
   {
     "ticker": "CWENE",
     "name": "Cw Enerji Mühendislik A.Ş.",
-    "entry_level": 200.0,
-    "current_live_price": 280.0,
-    "performance": "+40.00%",
-    "note": "[Oğuz Telegram] Cwene %40 prim takibi."
+    "entry_level": 36.0,
+    "current_live_price": null,
+    "performance": null,
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] CWENE hiç almayanlar 36 TL seviyesini tam ekleme planıyla değerlendirebilir. Daha önce alan ve ekleme yapacak olanlar 36-37 TL aralığında ekleme yapabilir.",
+    "captured_date": "2026-08-12",
+    "observed_at": "10:20",
+    "entry_zone": [36.0, 37.0],
+    "level_role": "ilk alım / ekleme",
+    "previous_records": [{"entry_level": 200.0, "observed_price": 280.0, "performance": "+40.00%", "note": "[Oğuz Telegram] CWENE %40 prim takibi."}]
   }
 ]

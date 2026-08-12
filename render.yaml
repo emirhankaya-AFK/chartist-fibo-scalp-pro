@@ -11,6 +11,18 @@ services:
         value: 3.11.0
       - key: NTFY_TOPIC
         value: emirkan_bist_alarm
+      - key: OPPORTUNITY_INTERVAL_SECONDS
+        value: "60"
+      - key: SUMMARY_GRACE_MINUTES
+        value: "10"
+      - key: COMMODITY_SPIKE_PCT
+        value: "0.50"
+      - key: ANALYST_PROXIMITY_PCT
+        value: "0.75"
+      - key: SEND_INDIVIDUAL_OPPORTUNITY_ALERTS
+        value: "0"
+      - key: ENABLE_TELEGRAM_NOTIFICATIONS
+        value: "0"
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHAT_ID
