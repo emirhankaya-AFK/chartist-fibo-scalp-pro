@@ -1348,12 +1348,17 @@ def _download_history(symbols: list[str]) -> pd.DataFrame:
 
 
 def _download_delayed_quotes(symbols: list[str]) -> dict[str, dict[str, Any]]:
-    """Best-effort 15-minute delayed display quotes; never used for signals."""
+    """Fetch the newest available delayed display quote; never used for signals.
+
+    Five-minute candles avoid selecting the previous 15-minute bucket at the
+    end of a session (for example 17:45 instead of the final 18:00 print).
+    The exchange feed remains delayed, so this is still display-only data.
+    """
     try:
         frame = yf.download(
             symbols,
             period="2d",
-            interval="15m",
+            interval="5m",
             group_by="ticker",
             auto_adjust=False,
             progress=False,
