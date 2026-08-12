@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260722-4">
+  <link rel="stylesheet" href="styles.css?v=20260812-1">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -45,6 +45,10 @@
       <a class="nav-link" href="#fundamental" data-view="fundamental">
         <span class="nav-icon">◎</span>
         <span>Isı Haritası</span>
+      </a>
+      <a class="nav-link" href="#commodityGroupsView" data-view="commodity-groups">
+        <span class="nav-icon">◈</span>
+        <span>Emtia Etki Grupları</span>
       </a>
       <a class="nav-link" href="#analystNotesView" data-view="analyst-notes">
         <span class="nav-icon">▤</span>
@@ -154,6 +158,11 @@
             <strong id="sessionCountdown">--:--:--</strong>
           </div>
         </div>
+      </section>
+
+      <section class="data-freshness-warning" id="dataFreshnessWarning" hidden>
+        <strong>⚠ Teknik analiz tarihi eski</strong>
+        <span id="dataFreshnessWarningText">Fiyatlar yenileniyor; eski teknik model sinyallerini işlem kararı olarak kullanma.</span>
       </section>
 
       <section class="metric-grid" aria-label="Piyasa özeti">
@@ -304,10 +313,10 @@
           <div class="panel-header">
             <div>
               <div class="title-line">
-                <h2>Gün Sonu Sinyalleri</h2>
+              <h2>Canlı Sinyaller <span class="title-accent">(Takiptekiler)</span></h2>
                 <span class="live-badge" id="signalDataBadge"><i></i> VERİ YÜKLENİYOR</span>
               </div>
-              <p>Algoritmalar tarafından doğrulanan takip listesi</p>
+              <p>Strateji, konsensüs, teknik puan, giriş–stop–hedef ve canlı fiyatlar tek tabloda.</p>
             </div>
             <div class="panel-actions">
               <button class="ghost-button recommendation-filter" id="openOnlyButton" data-recommendation="OPEN" type="button">2 Aday</button>
@@ -360,14 +369,14 @@
                   <th class="portfolio-col"><span class="sr-only">Portföye ekle</span></th>
                   <th data-sort="ticker">HİSSE <span class="sort-mark">↕</span></th>
                   <th data-sort="strategy">STRATEJİ <span class="sort-mark">↕</span></th>
-                  <th data-sort="fundamental">FİNANS <span class="sort-mark">↕</span></th>
-                  <th data-sort="guru">TREND <span class="sort-mark">↕</span></th>
+                  <th data-sort="fundamental">TEMEL <span class="sort-mark">↕</span></th>
+                  <th data-sort="guru">GURU <span class="sort-mark">↕</span></th>
                   <th>RSI / ADX</th>
-                  <th data-sort="sentiment">MOM. <span class="sort-mark">↕</span></th>
-                  <th data-sort="master" class="master-head">TEKNİK <span class="sort-mark">↕</span></th>
-                  <th data-sort="positionScore" class="position-head">★ POZ. PUAN <span class="sort-mark">↓</span></th>
+                  <th data-sort="sentiment">SENTİMENT <span class="sort-mark">↕</span></th>
+                  <th data-sort="master" class="master-head">MASTER <span class="sort-mark">↕</span></th>
+                  <th data-sort="positionScore" class="position-head">★ GELİŞ <span class="sort-mark">↓</span></th>
                   <th data-sort="confidence" class="confidence-head">MODEL GÜVENİ <span class="sort-mark">↕</span></th>
-                  <th data-sort="price">RESMÎ KAPANIŞ <span class="sort-mark">↕</span></th>
+                  <th data-sort="price">GÜNCEL <span class="sort-mark">↕</span></th>
                   <th>EXCEL DESTEK</th>
                   <th>EXCEL DİRENÇ</th>
                   <th data-sort="return">GİRİŞ MESAFE <span class="sort-mark">↕</span></th>
@@ -610,6 +619,29 @@
             </div>
           </div>
         </article>
+      </section>
+
+      <section class="panel commodity-groups-panel" id="commodityGroupsView">
+        <div class="panel-header commodity-groups-header">
+          <div>
+            <span class="commodity-eyebrow">5 DK EMTİA · BIST YAKLAŞIK 15 DK GECİKMELİ</span>
+            <h2>Emtia Etki Grupları</h2>
+            <p>Petrol, altın, gümüş ve bakır hareketlerini ilişkili BIST hisseleriyle yan yana karşılaştırır.</p>
+          </div>
+          <div class="commodity-header-actions">
+            <span class="status-pill" id="commodityGroupsStatus">YÜKLENİYOR</span>
+            <button class="secondary-button" id="commodityGroupsRefresh" type="button">Yenile</button>
+          </div>
+        </div>
+        <div class="commodity-legend" aria-label="Emtia ilişki türleri">
+          <span><i class="relation-dot same"></i>Aynı yön / doğrudan</span>
+          <span><i class="relation-dot inverse"></i>Ters etki / maliyet</span>
+          <span><i class="relation-dot mixed"></i>Karma veya dolaylı</span>
+        </div>
+        <div class="commodity-groups-grid" id="commodityGroupsGrid">
+          <article class="commodity-loading-card">Emtia grupları ve ilişkili hisseler yükleniyor…</article>
+        </div>
+        <p class="muted-note commodity-disclaimer">Bu gruplar nedensellik veya alım önerisi değildir. “Geride kaldı” etiketi yalnızca emtia ile aynı zamanlı yüzde hareket kıyaslamasıdır.</p>
       </section>
 
       <section class="panel analyst-panel" id="analystBenchmark">
@@ -898,6 +930,37 @@
     <div><strong>Pozisyon eklendi</strong><small>Sanal portföyünüz güncellendi.</small></div>
   </div>
 
-  <script src="app.js?v=20260723-7"></script>
+  <div class="signal-popup-backdrop" id="signalPopup" aria-hidden="true">
+    <section class="signal-popup" role="dialog" aria-modal="true" aria-labelledby="popupTicker">
+      <button class="modal-close" id="signalPopupClose" type="button" aria-label="Sinyal detayını kapat">×</button>
+      <div class="popup-flame">🔥</div>
+      <div class="popup-kicker" id="popupKicker">MODEL SİNYALİ</div>
+      <h2 id="popupTitle">—</h2>
+      <p class="popup-company" id="popupCompany">—</p>
+      <div class="popup-alert" id="popupAlert">—</div>
+      <div class="popup-consensus" id="popupConsensus">—</div>
+      <div class="popup-badge" id="popupStrategy">—</div>
+      <div class="popup-direction" id="popupDirection">🟢 LONG (Alış / Pozisyon)</div>
+      <div class="popup-grid">
+        <div><small>HİSSE KODU</small><strong id="popupTicker">—</strong></div>
+        <div><small>PERİYOT</small><strong id="popupPeriod">—</strong></div>
+        <div><small>GİRİŞ FİYATI</small><strong id="popupEntry">—</strong></div>
+        <div><small>GÜNCEL FİYAT</small><strong id="popupPrice">—</strong></div>
+        <div><small>SİNYAL GELİŞ</small><strong id="popupScore">—</strong></div>
+        <div><small>MODEL GÜVENİ</small><strong id="popupConfidence">—</strong></div>
+      </div>
+      <div class="popup-plan">
+        <div><span>🛑 STOP</span><strong id="popupStop">—</strong></div>
+        <div><span>🎯 TP1</span><strong id="popupTp1">—</strong></div>
+        <div><span>🎯 TP2</span><strong id="popupTp2">—</strong></div>
+        <div><span>🎯 TP3</span><strong id="popupTp3">—</strong></div>
+      </div>
+      <div class="popup-stats" id="popupStats">—</div>
+      <div class="popup-note" id="popupNote">—</div>
+      <button class="primary-button popup-open-plan" id="popupOpenPlan" type="button">Detaylı planı aç →</button>
+    </section>
+  </div>
+
+  <script src="app.js?v=20260812-2"></script>
 </body>
 </html>

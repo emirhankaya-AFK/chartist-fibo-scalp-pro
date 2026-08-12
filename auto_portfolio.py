@@ -2,46 +2,24 @@ from __future__ import annotations
 import json
 import os
 import math
-import urllib.request
 
 PORTFOLIO_FILE = "data/auto_portfolio.json"
 
-def send_auto_notification(message: str) -> None:
-    """Sends real-time notifications to NTFY (phone push app) and Telegram Bot if configured."""
-    try:
-        from intraday_opportunity_worker import is_notification_window_open
-        if not is_notification_window_open():
-            return
-    except Exception:
-        pass
+def send_auto_notification(
+    message: str,
+    *,
+    ticker: str | None = None,
+    event_type: str | None = None,
+) -> bool:
+    """Send a paper-portfolio push through the shared, audited delivery path."""
+    from intraday_opportunity_worker import send_audited_notification
 
-    # 1. NTFY Push Notification
-    topic = os.getenv("NTFY_TOPIC", "emirkan_bist_alarm").strip()
-    if topic:
-        try:
-            url = f"https://ntfy.sh/{topic}"
-            headers = {"Title": "Chartist Auto-Trade", "Priority": "high", "Tags": "robot,chart_with_upwards_trend"}
-            token = os.getenv("NTFY_TOKEN", "").strip()
-            if token:
-                headers["Authorization"] = f"Bearer {token}"
-            req = urllib.request.Request(url, data=message.encode("utf-8"), headers=headers, method="POST")
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                pass
-        except Exception:
-            pass
-
-    # 2. Telegram Bot Notification
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
-    chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
-    if bot_token and chat_id:
-        try:
-            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-            payload = json.dumps({"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}).encode("utf-8")
-            req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                pass
-        except Exception:
-            pass
+    return send_audited_notification(
+        message,
+        category="auto-portfolio",
+        ticker=ticker or "SANAL PORTFÖY",
+        context={"trigger": "paper_portfolio_event", "eventType": event_type},
+    )
 
 
 def load_portfolio() -> dict:
@@ -85,7 +63,10 @@ def reset_portfolio() -> dict:
         "history": []
     }
     save_portfolio(state)
-    send_auto_notification("↻ *Robot Portföy Sıfırlandı:* Başlangıç bakiyesi 10.000 TL olarak yenilendi.")
+    send_auto_notification(
+        "↻ *Robot Portföy Sıfırlandı:* Başlangıç bakiyesi 10.000 TL olarak yenilendi.",
+        event_type="RESET",
+    )
     return state
 
 def update_auto_portfolio(stocks: list[dict], data_date_str: str) -> dict:
@@ -143,7 +124,9 @@ def update_auto_portfolio(stocks: list[dict], data_date_str: str) -> dict:
                 f"🚨 *AUTO-TRADE STOP OLDU*\n\n"
                 f"📌 *Hisse:* #{ticker}\n"
                 f"💵 *Çıkış Fiyatı:* {exit_price} TL\n"
-                f"📉 *Net K/Z:* {pnl:+.2f} TL (%{ret_pct:+.2f})"
+                f"📉 *Net K/Z:* {pnl:+.2f} TL (%{ret_pct:+.2f})",
+                ticker=ticker,
+                event_type="STOP",
             )
             continue
             
@@ -172,7 +155,9 @@ def update_auto_portfolio(stocks: list[dict], data_date_str: str) -> dict:
                     f"🎯 *AUTO-TRADE TP1 HEDEFİ GÖRÜLDÜ (%50 KÂR ALIS)*\n\n"
                     f"📌 *Hisse:* #{ticker}\n"
                     f"💵 *Satış Fiyatı:* {exit_price} TL ({sell_qty} Lot)\n"
-                    f"📈 *Kâr:* {pnl:+.2f} TL (%{ret_pct:+.2f})"
+                    f"📈 *Kâr:* {pnl:+.2f} TL (%{ret_pct:+.2f})",
+                    ticker=ticker,
+                    event_type="TP1",
                 )
             pos["tp1_hit"] = True
             
@@ -197,7 +182,9 @@ def update_auto_portfolio(stocks: list[dict], data_date_str: str) -> dict:
                 f"🚀 *AUTO-TRADE TP2 ANA HEDEF GÖRÜLDÜ (KAPANDI)*\n\n"
                 f"📌 *Hisse:* #{ticker}\n"
                 f"💵 *Çıkış Fiyatı:* {exit_price} TL ({pos['qty']} Lot)\n"
-                f"📈 *Net K/Z:* {pnl:+.2f} TL (%{ret_pct:+.2f})"
+                f"📈 *Net K/Z:* {pnl:+.2f} TL (%{ret_pct:+.2f})",
+                ticker=ticker,
+                event_type="TP2",
             )
             continue
             
@@ -258,7 +245,9 @@ def update_auto_portfolio(stocks: list[dict], data_date_str: str) -> dict:
                     f"  • 1. Hedef (TP1): {targets[0]:.2f} TL\n"
                     f"  • 2. Hedef (TP2): {targets[1]:.2f} TL\n"
                     f"  • 3. Hedef (TP3): {targets[2]:.2f} TL\n\n"
-                    f"💼 *Kalan Boştaki Nakit:* {state['current_cash']:,.2f} TL"
+                    f"💼 *Kalan Boştaki Nakit:* {state['current_cash']:,.2f} TL",
+                    ticker=ticker,
+                    event_type="BUY",
                 )
                     
     state["last_updated_date"] = data_date_str

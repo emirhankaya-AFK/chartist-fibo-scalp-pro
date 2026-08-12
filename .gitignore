@@ -15,6 +15,7 @@ env/
 *.log
 *.err.log
 *.out.log
+data/notification_audit.jsonl
 
 # Temporary data files
 *.tmp
