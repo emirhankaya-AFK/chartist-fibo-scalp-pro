@@ -11,12 +11,17 @@ import urllib.request
 import zipfile
 from pathlib import Path
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import numpy as np
 import pandas as pd
 import yfinance as yf
+
+try:
+    import borsapy as bp
+except ImportError:  # Optional locally; Yahoo remains the fallback.
+    bp = None
 
 
 BENCHMARK = "XU100.IS"
@@ -1354,6 +1359,46 @@ def _download_delayed_quotes(symbols: list[str]) -> dict[str, dict[str, Any]]:
     end of a session (for example 17:45 instead of the final 18:00 print).
     The exchange feed remains delayed, so this is still display-only data.
     """
+    if bp is not None:
+        try:
+            stream = bp.TradingViewStream()
+            stream.connect()
+            tickers = [symbol.removesuffix(".IS") for symbol in symbols]
+            for ticker in tickers:
+                stream.subscribe(ticker)
+            quotes: dict[str, dict[str, Any]] = {}
+            for ticker in tickers:
+                try:
+                    item = stream.wait_for_quote(ticker, timeout=4)
+                    raw = item.get("_raw") or {}
+                    stamp = raw.get("lp_time") or item.get("timestamp")
+                    timestamp = (
+                        datetime.fromtimestamp(float(stamp), tz=timezone.utc)
+                        .astimezone()
+                        .isoformat()
+                        if stamp
+                        else None
+                    )
+                    price = _safe_float(item.get("last"))
+                    if price is None:
+                        continue
+                    quotes[ticker] = {
+                        "price": round(price, 4),
+                        "previousClose": _safe_float(item.get("prev_close")),
+                        "daily": _safe_float(item.get("change_percent")),
+                        "timestamp": timestamp,
+                        "source": "TradingView / BIST (gecikmeli)",
+                        "verified": True,
+                        "chart": [],
+                    }
+                except Exception:
+                    continue
+            stream.disconnect()
+            if quotes:
+                return quotes
+        except Exception:
+            pass
+
     try:
         frame = yf.download(
             symbols,
@@ -1449,7 +1494,7 @@ def _latest_display_payload(
             stock["delayedQuote"] = dict(quote)
             stock["price"] = quote["price"]
             stock["daily"] = quote.get("daily")
-            stock["priceSource"] = "Yahoo Finance · yaklaşık 15 dk gecikmeli gösterim"
+            stock["priceSource"] = quote.get("source") or "Gecikmeli piyasa verisi"
             stock["priceTimestamp"] = quote.get("timestamp")
             stock["displayPriceOnly"] = True
             updated_count += 1
