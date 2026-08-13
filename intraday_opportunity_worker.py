@@ -709,9 +709,19 @@ def check_and_send_scheduled_summaries(payload: dict) -> None:
     wind_text = f"BIST100: {xu100_price} TL (%{xu100_daily:+.2f}){index_warning}"
 
     stocks = payload.get("stocks", [])
-    candidates = [s for s in stocks if s.get("recommendation") in {"OPEN", "WATCH"}]
+    # The scheduled bulletin is a shortlist, not a catalogue. Only show
+    # high-conviction OPEN signals; WATCH/weak candidates belong on the site.
+    candidates = [
+        s for s in stocks
+        if s.get("recommendation") == "OPEN"
+        and float(s.get("modelScore") or 0) >= 82
+        and float((s.get("componentScores") or {}).get("technical") or 0) >= 65
+        and float((s.get("componentScores") or {}).get("stop") or 0) >= 60
+        and float(s.get("rr") or 0) >= 1.8
+        and not any("RİSK" in str(b).upper() or "RISK" in str(b).upper() or "OBO" in str(b).upper() for b in (s.get("badges") or []))
+    ]
     top_candidates = sorted(
-        candidates or stocks,
+        candidates,
         key=lambda s: s.get("modelScore", 0),
         reverse=True,
     )[:5]
