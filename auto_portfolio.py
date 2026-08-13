@@ -192,11 +192,26 @@ def update_auto_portfolio(stocks: list[dict], data_date_str: str) -> dict:
         
     state["positions"] = active_positions
     
-    # Process new entries whenever active positions < 5 and cash is available (>= 2000 TL)
-    candidates = [s for s in stocks if s.get("modelScore", 0) >= 75 and s.get("recommendation") == "OPEN"]
-    if not candidates:
-        # Fallback to top scored stocks
-        candidates = [s for s in stocks if s.get("modelScore", 0) >= 75]
+    # Only enter high-conviction, risk-filtered OPEN signals. There is no
+    # fallback to WATCH/uncertain stocks: an empty candidate list is safer
+    # than filling the paper portfolio with noise.
+    def eligible_entry(stock: dict) -> bool:
+        score = float(stock.get("modelScore") or 0)
+        technical = float(stock.get("technicalScore") or stock.get("componentScores", {}).get("technical") or 0)
+        stop_score = float(stock.get("componentScores", {}).get("stop") or 0)
+        rr = float(stock.get("rr") or 0)
+        badges = [str(b).upper() for b in (stock.get("badges") or [])]
+        has_risk_badge = any("RİSK" in badge or "RISK" in badge or "OBO" in badge for badge in badges)
+        return (
+            stock.get("recommendation") == "OPEN"
+            and score >= 82
+            and technical >= 65
+            and stop_score >= 60
+            and rr >= 1.8
+            and not has_risk_badge
+        )
+
+    candidates = [s for s in stocks if eligible_entry(s)]
     candidates.sort(key=lambda s: s.get("modelScore", 0), reverse=True)
 
     for stock in candidates:
