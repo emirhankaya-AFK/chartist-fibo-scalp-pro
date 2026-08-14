@@ -158,6 +158,24 @@ ANALYSES = [
         "resistance": 71.0,
         "note": f"{SOURCE_TAG} 64-65 dolar kırılımı ve yaklaşan golden cross pozitif. Teknik hedef/direnç 71 dolar; hızlı yükseliş sonrasında düzeltme riskine karşı stoplu izlenmeli. Zaman: 01:05:01-01:07:25.",
     },
+    {
+        "analysis_id": "mergen-20260811-taten",
+        "ticker": "TATEN",
+        "name": "Tatlıpınar Enerji Üretim A.Ş.",
+        "entry_level": 6.75,
+        "support": 6.5,
+        "resistance": 21.0,
+        "note": f"{SOURCE_TAG} 6,50-7,00 TL geçmiş dip/tepki bölgesi olarak izleniyor; mali görünüm zayıf olduğu için yalnızca destek üzerinde tutunma ve en az 1-2 hafta teyit sonrası değerlendirme yapılmalı. 21 TL güçlü satış/direnç bölgesi. 5 TL video seviyesi değildir; 5 TL'ye sarkma 6,50-7,00 desteğinin kırıldığı risk senaryosudur. Zaman: 00:22:47-00:24:35.",
+    },
+    {
+        "analysis_id": "mergen-20260811-thyao",
+        "ticker": "THYAO",
+        "name": "Türk Hava Yolları A.O.",
+        "entry_level": 315.0,
+        "support": 310.0,
+        "resistance": 325.0,
+        "note": f"{SOURCE_TAG} 315 TL üzeri toparlanma 325 TL'yi; formasyon teyidiyle yaklaşık 355 TL hedefini gündeme getirir. 310 TL altı kısa vadeli stop/bozulma seviyesi olarak takip edilmeli. Zaman: 00:15:39-00:18:55.",
+    },
 ]
 
 
@@ -204,6 +222,12 @@ ALERTS = [
     ("GC=F", "Ons Altın", ">=", 4600.0, "Kâr satışı beklenen hedef/direnç bölgesi."),
     ("SI=F", "Ons Gümüş", ">=", 65.0, "64-65 dolar kırılım teyidi."),
     ("SI=F", "Ons Gümüş", ">=", 71.0, "Teknik hedef/direnç bölgesi."),
+    ("TATEN.IS", "Tatlıpınar Enerji", "<=", 6.5, "6,50-7 TL geçmiş dip/tepki bölgesi; mali teyit olmadan alım sinyali değildir."),
+    ("TATEN.IS", "Tatlıpınar Enerji", "<=", 5.0, "6,50-7 TL desteği kırılmış olur; tepki garantisi değil, yüksek risk/izleme alarmı."),
+    ("TATEN.IS", "Tatlıpınar Enerji", ">=", 21.0, "Güçlü satış/direnç bölgesi; kâr realizasyonu değerlendirilebilir."),
+    ("THYAO.IS", "Türk Hava Yolları", ">=", 315.0, "315 TL üzeri toparlanma teyidi; 325 TL izlenir."),
+    ("THYAO.IS", "Türk Hava Yolları", "<=", 310.0, "Kısa vadeli stop/bozulma seviyesi."),
+    ("THYAO.IS", "Türk Hava Yolları", ">=", 355.0, "Formasyon hedef bölgesi."),
 ]
 
 
