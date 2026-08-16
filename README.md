@@ -1,44 +1,46 @@
 # Chartist Fibo-Scalp Pro
 
-BIST 30 hisselerini son tamamlanmış resmî seans kapanışına göre puanlayan yerel karar destek panelidir.
+[English](README.md) | [Türkçe](README_TR.md)
 
-## Çalıştırma
+A local decision-support dashboard that scores BIST 30 stocks using the latest completed official trading-session close.
+
+## Run locally
 
 ```powershell
 pip install -r requirements.txt
 python server.py
 ```
 
-Ardından `http://127.0.0.1:8080` adresini açın. `index.html` dosyasını doğrudan açmak veri API'sini çalıştırmaz.
+Open `http://127.0.0.1:8080`. Opening `index.html` directly does not start the data API.
 
-## Veri politikası
+## Data policy
 
-- Güncel fiyat, OHLC, hacim ve BIST 30 üyeliği: Borsa İstanbul resmî günlük bülteni
-- BIST 100 kapanışı: Borsa İstanbul'un 15 dakika gecikmeli veri servisi
-- Bir yıllık gösterge tarihçesi: Yahoo Finance
-- Finansal/KAP verisi: henüz bağlı değil; pozisyon puanına etkisi `%0`
-- Resmî kapanış bülteni bulunamazsa model güvenli moda geçer ve pozisyon önermez
+- Current price, OHLC, volume, and BIST 30 membership: Borsa İstanbul official daily bulletin
+- BIST 100 close: Borsa İstanbul's 15-minute delayed data service
+- One-year indicator history: Yahoo Finance
+- Financial/KAP data: not connected yet and weighted at 0%
+- If an official closing bulletin cannot be found, the model enters safe mode and does not suggest a position
 
-Ekrandaki fiyatlar gerçek zamanlı değildir. Son tamamlanmış seansın resmî kapanış değerleridir.
+Displayed prices are not real time; they represent the official close of the latest completed session.
 
-## Pozisyon Puanı
+## Position score
 
-- Teknik güç: `%78`
-- Giriş zamanlaması: `%14`
-- Stop güvenliği: `%8`
-- Finansal kalite: `%0` — doğrulanmış KAP entegrasyonu gelene kadar devre dışı
+- Technical strength: 78%
+- Entry timing: 14%
+- Stop safety: 8%
+- Financial quality: 0% until a verified KAP integration is available
 
-`GİRİŞ UYGUN` kararı için puanın yanında trend, ADX, yön, göreli güç, risk ve giriş bölgesi eşikleri de birlikte sağlanmalıdır. `BEKLE` ve `AÇMA` durumlarında sanal pozisyon planlama düğmesi kilitlenir.
+An `ENTRY SUITABLE` decision also requires the trend, ADX, direction, relative strength, risk, and entry-zone thresholds to pass. Virtual position planning is disabled for `WAIT` and `DO NOT OPEN` states.
 
-## Çalışan özellikler
+## Included features
 
-- Resmî bültenden dinamik BIST 30 evreni
-- Resmî kapanışla doğrulanan fiyat/OHLC/hacim
-- Açıklanabilir teknik puan ve koşullu giriş kararı
-- Arama, filtreleme ve sütun sıralama
-- Dinamik strateji sayıları ve BIST 30 sektör ısı haritası
-- CSV dışa aktarım
-- Yalnız uygun adaylar için yerel sanal portföy
-- Veri alınamazsa sahte fiyat göstermeyen güvenli hata durumu
+- Dynamic BIST 30 universe sourced from the official bulletin
+- Price, OHLC, and volume verification against official closing data
+- Explainable technical scoring and conditional entry decisions
+- Search, filters, and sortable columns
+- Dynamic strategy figures and a BIST 30 sector heat map
+- CSV export and a local virtual portfolio for eligible candidates
+- Safe failure behavior that never fabricates prices
 
-> Bu uygulama yatırım tavsiyesi değildir. Backtest başarı oranı doğrulanmadığı için ekranda başarı yüzdesi gösterilmez.
+> This application is not investment advice. No success percentage is shown because the backtest win rate has not been independently verified.
+
