@@ -196,7 +196,12 @@ def _notify(message: str) -> bool:
     topic = os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()
     if topic:
         url = f"https://ntfy.sh/{topic}"
-        headers = {"Title": "Chartist Fibo-Scalp Pro", "Priority": "high", "Tags": "chart_with_upwards_trend,bell"}
+        is_oguz = "oğuz" in message.lower() or "oguz" in message.lower()
+        headers = {
+            "Title": "OĞUZ ANALİST ALARMI" if is_oguz else "Chartist Fibo-Scalp Pro",
+            "Priority": "max" if is_oguz else "high",
+            "Tags": "rotating_light,chart_with_upwards_trend" if is_oguz else "chart_with_upwards_trend,bell",
+        }
         token = os.getenv("NTFY_TOKEN", "").strip()
         if token:
             headers["Authorization"] = f"Bearer {token}"
@@ -1157,12 +1162,14 @@ def _run_once_unlocked() -> list[dict]:
         # Check opening market commodity diagnostic and technical health bulletin (09:55 TR)
         check_opening_diagnostic_alert(payload)
 
+        # Analyst levels use the current quote overlay and must not wait for
+        # the expensive technical model refresh. Oğuz alerts are the user's
+        # primary channel, so check them before the lower-priority summaries.
+        check_analyst_level_alerts(payload)
+
         if stock_data_is_fresh:
             # Send current top-model opportunities every two hours.
             check_and_send_scheduled_summaries(payload)
-
-            # Check Oğuz/Mergen support, resistance and entry levels.
-            check_analyst_level_alerts(payload)
 
             # Check BIST price movement milestones using delayed quotes.
             check_intraday_price_movements(payload)
