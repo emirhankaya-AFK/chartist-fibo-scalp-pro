@@ -652,6 +652,18 @@ def check_analyst_level_alerts(payload: dict) -> None:
             else:
                 message += f"Giriş seviyesi {alert['level']:.2f} TL civarında. Analist bu seviyeyi alım için uygun görmüştü. Stop koyarak değerlendirilebilir."
 
+            # Start an independent analyst-performance record. This remains
+            # visible even if Ntfy delivery fails or the model is stale.
+            _start_or_update_analyst_track(
+                ticker=ticker,
+                name=name,
+                source=source,
+                alert_type=alert["type"],
+                level=float(alert["level"]),
+                price=price,
+                note=note,
+                now=get_tr_now().isoformat(timespec="seconds"),
+            )
             delivered = _notify(message)
             _append_system_notification_log("analyst-level", message, delivered, ticker=ticker)
             if delivered:
@@ -1087,14 +1099,14 @@ def _run_once_unlocked() -> list[dict]:
             payload["marketBoard"] = list(board_by_label.values())
 
         stock_data_is_fresh = not payload.get("staleData", False)
-        opportunities = opportunity_snapshot(payload)
-        existing = {item["ticker"] for item in opportunities}
-        opportunities.extend(item for item in manual_opportunity_snapshot(payload) if item["ticker"] not in existing)
-        tracks = _record_tracking(payload, opportunities)
+        # Analyst-only mode: Oğuz and Ahmet Mergen levels are the only
+        # notification source and the only new tracking records.
+        opportunities = []
+        tracks = _load_tracking()
         state = _load_state()
         today_str = get_tr_now().strftime("%Y-%m-%d")
         changed = False
-        notification_candidates = opportunities if SEND_INDIVIDUAL_OPPORTUNITY_ALERTS else []
+        notification_candidates = []
         for item in notification_candidates:
             key = f"{today_str}|manual|{item['ticker']}" if item.get("manual") else f"{today_str}|{item['ticker']}|{item['strategy']}"
             if state.get(key):
@@ -1159,30 +1171,15 @@ def _run_once_unlocked() -> list[dict]:
         if changed:
             _save_state(state)
 
-        # Check opening market commodity diagnostic and technical health bulletin (09:55 TR)
-        check_opening_diagnostic_alert(payload)
-
         # Analyst levels use the current quote overlay and must not wait for
         # the expensive technical model refresh. Oğuz alerts are the user's
         # primary channel, so check them before the lower-priority summaries.
         check_analyst_level_alerts(payload)
+        _refresh_analyst_tracks(payload)
+        tracks = _load_tracking()
 
-        if stock_data_is_fresh:
-            # Send current top-model opportunities every two hours.
-            check_and_send_scheduled_summaries(payload)
-
-            # Check BIST price movement milestones using delayed quotes.
-            check_intraday_price_movements(payload)
-
-        # Check commodity correlation alerts (Gold, Silver, Petrol, Copper vs related stocks)
-        check_commodity_correlation_alerts(payload)
-
-        # Update 10K Paper Trading Auto-Portfolio state automatically
-        try:
-            from auto_portfolio import update_auto_portfolio
-            update_auto_portfolio(payload.get("stocks", []), today_str)
-        except Exception:
-            pass
+        # Analyst-only mode: model summaries, commodity correlations and
+        # paper-portfolio events are intentionally disabled.
 
         with _status_lock:
             _status.update({"running": True, "lastRun": datetime.now().astimezone().isoformat(timespec="seconds"), "lastError": None, "opportunities": opportunities, "tracking": list(tracks.values()), "notificationsEnabled": bool(os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()), "topic": os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()})
@@ -1239,6 +1236,74 @@ def _save_tracking(value: dict[str, dict]) -> None:
     TRACKING_LOG_PATH.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
 
 
+def _start_or_update_analyst_track(
+    *, ticker: str, name: str, source: str, alert_type: str,
+    level: float, price: float, note: str, now: str,
+) -> None:
+    """Persist an analyst alert as a price-performance experiment."""
+    tracks = _load_tracking()
+    day = now[:10]
+    key = f"analyst|{source}|{ticker}|{alert_type}|{float(level):.4f}|{day}"
+    track = tracks.get(key)
+    if not track:
+        track = {
+            "trackId": key,
+            "ticker": ticker,
+            "name": name,
+            "strategy": "Analist Alarmı",
+            "analystSource": source,
+            "alarmType": alert_type,
+            "alarmLevel": float(level),
+            "alarmPrice": float(price),
+            "analystMessage": note,
+            "startedAt": now,
+            "startPrice": float(price),
+            "lastAt": now,
+            "lastPrice": float(price),
+            "highestPrice": float(price),
+            "highestAt": now,
+            "changePercent": 0.0,
+            "maxChangePercent": 0.0,
+            "updates": [],
+            "closed": False,
+        }
+        tracks[key] = track
+    _update_analyst_track(track, price, now)
+    _save_tracking(tracks)
+
+
+def _update_analyst_track(track: dict, price: float, now: str) -> None:
+    price = float(price)
+    track.setdefault("updates", []).append({"timestamp": now, "price": price})
+    track["updates"] = track["updates"][-100:]
+    track["lastAt"] = now
+    track["lastPrice"] = price
+    start = float(track.get("alarmPrice") or track.get("startPrice") or price)
+    track["changePercent"] = round((price / start - 1) * 100, 2) if start else 0.0
+    if price >= float(track.get("highestPrice") or price):
+        track["highestPrice"] = price
+        track["highestAt"] = now
+    track["maxChangePercent"] = round((float(track.get("highestPrice") or price) / start - 1) * 100, 2) if start else 0.0
+
+
+def _refresh_analyst_tracks(payload: dict) -> None:
+    tracks = _load_tracking()
+    prices = {}
+    for stock in payload.get("stocks", []):
+        quote = stock.get("delayedQuote") or {}
+        value = quote.get("price") or stock.get("price")
+        if value not in (None, ""):
+            prices[str(stock.get("ticker")).upper()] = float(value)
+    now = get_tr_now().isoformat(timespec="seconds")
+    changed = False
+    for track in tracks.values():
+        if track.get("strategy") == "Analist Alarmı" and track.get("ticker", "").upper() in prices:
+            _update_analyst_track(track, prices[track["ticker"].upper()], now)
+            changed = True
+    if changed:
+        _save_tracking(tracks)
+
+
 def _record_tracking(payload: dict, opportunities: list[dict]) -> dict[str, dict]:
     tracks = _load_tracking()
     now = datetime.now().astimezone().isoformat(timespec="seconds")
@@ -1292,7 +1357,10 @@ def _record_tracking(payload: dict, opportunities: list[dict]) -> dict[str, dict
             track["highestAt"] = now
         start = float(track.get("startPrice") or price)
         track["changePercent"] = round((price / start - 1) * 100, 2) if start else 0.0
-        _advance_trade_lifecycle(track, price, now)
+        if track.get("strategy") != "Analist Alarmı":
+            _advance_trade_lifecycle(track, price, now)
+        else:
+            _update_analyst_track(track, price, now)
     _save_tracking(tracks)
     return tracks
 
