@@ -1543,6 +1543,33 @@ async function loadAnalystBenchmark() {
   }
 }
 
+async function loadDemoWorkers() {
+  try {
+    const [portfolioResponse, workerResponse] = await Promise.all([
+      fetch("/api/demo/portfolio", { cache: "no-store" }),
+      fetch("/api/workers/status", { cache: "no-store" }),
+    ]);
+    const portfolioPayload = await portfolioResponse.json();
+    const workerPayload = await workerResponse.json();
+    const p = portfolioPayload.portfolio || {};
+    const workers = workerPayload.workers || {};
+    const openTrades = (portfolioPayload.trades || []).filter((trade) => trade.status === "open").length;
+    document.getElementById("demoInitialBalance").textContent = `$${formatNumber(Number(p.initial_balance || 3500), 2)}`;
+    document.getElementById("demoRealizedPnl").textContent = `$${formatNumber(Number(portfolioPayload.realized_pnl_usd || 0), 2)}`;
+    document.getElementById("demoOpenTrades").textContent = String(openTrades);
+    document.getElementById("demoWorkerRequests").textContent = String(workers.requests || 0);
+    document.getElementById("workerStatusPill").textContent = workers.status === "ready" ? "ÇALIŞANLAR HAZIR" : "ANAHTAR BEKLENİYOR";
+    const list = document.getElementById("demoWorkerList");
+    list.innerHTML = Object.entries(workers.workers || {}).map(([name, info]) => `
+      <div class="demo-worker-row"><strong>${name.toUpperCase()}</strong><span>${escapeHtml(info.model || "")}</span><em class="${info.configured ? "positive" : "negative"}">${info.configured ? "Bağlı" : "Eksik anahtar"}</em></div>
+    `).join("");
+  } catch (error) {
+    const pill = document.getElementById("workerStatusPill");
+    if (pill) pill.textContent = "API BEKLENİYOR";
+    console.error("Demo worker panel error:", error);
+  }
+}
+
 let excelNoteRows = [];
 
 function displayExcelLevel(value) {
@@ -1771,6 +1798,7 @@ updateClocks();
 setInterval(updateClocks, 1000);
 initializeMarketData();
 loadAnalystBenchmark();
+loadDemoWorkers();
 loadExcelNotes();
 loadNotificationLog();
 loadCommodityGroups();
