@@ -14,5 +14,4 @@ jobs:
         run: |
           echo "Pinging Render server at $(date)..."
           curl -s -f --max-time 30 https://chartist-fibo-scalp-pro.onrender.com/api/notifications > /dev/null || echo "Ping failed or timed out"
-          curl -s -f --max-time 30 https://chartist-fibo-scalp-pro.onrender.com/api/auto-portfolio > /dev/null || echo "Ping failed or timed out"
           echo "Ping completed successfully."

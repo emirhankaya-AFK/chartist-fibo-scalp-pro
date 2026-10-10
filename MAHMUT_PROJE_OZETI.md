@@ -27,6 +27,7 @@ Otomatik gerçek para emri göndermez. Sanal portföy ve araştırma amaçlıdı
 - `server.py`: Flask localhost sunucusu ve API endpoint’leri.
 - `requirements.txt`: Flask, NumPy, Pandas ve yfinance bağımlılıkları.
 - `RAKIP_KIYASLAMASI.md`: Rakip ekran ve model kıyaslaması.
+- `ABD_PIYASALARI_SHORT_STRATEJISI.md`: Gelecekte ABD Small-Cap piyasalarında uygulanacak Short Satış & Squeeze Önleme Strateji Dokümanı.
 - `README.md`: Kısa kullanım ve veri politikası.
 - `MAHMUT_PROJE_OZETI.md`: Bu devir dokümanı.
 

@@ -7,7 +7,14 @@ import os
 import threading
 import time
 
-from market_scanner import scan_market, _load_excel_notes, _json_safe
+from market_scanner import (
+    scan_market,
+    intraday_commodity_snapshots,
+    _download_delayed_quotes,
+    _load_excel_notes,
+    _json_safe,
+)
+from commodity_groups import all_group_tickers, build_commodity_group_snapshot
 from backtest import backtest_ticker
 from analyst_benchmark import load_analyst_alerts
 from intraday_opportunity_worker import run_once as run_opportunity_scan, worker_status, notification_log, tracking_log, add_manual_tracking, manual_tracking
@@ -17,6 +24,45 @@ from demo_core import init_db, portfolio as demo_portfolio, open_trade as demo_o
 
 app = Flask(__name__, static_folder=None)
 init_db()
+_commodity_group_cache_lock = threading.Lock()
+_commodity_group_cache = {"createdAt": 0.0, "payload": None}
+COMMODITY_GROUP_CACHE_SECONDS = 240
+_full_scan_lock = threading.Lock()
+_full_scan_status = {
+    "running": False,
+    "startedAt": None,
+    "finishedAt": None,
+    "lastError": None,
+    "dataDate": None,
+}
+
+
+def trigger_full_scan_async() -> bool:
+    """Refresh the expensive technical model off-request so Render cannot time it out."""
+    if not _full_scan_lock.acquire(blocking=False):
+        return False
+
+    def _refresh() -> None:
+        _full_scan_status.update({
+            "running": True,
+            "startedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "lastError": None,
+        })
+        try:
+            result = scan_market(force=True)
+            _full_scan_status["dataDate"] = result.get("dataDate")
+        except Exception as exc:
+            _full_scan_status["lastError"] = f"{type(exc).__name__}: {exc}"
+            print(f"[FULL SCAN ERROR] {type(exc).__name__}: {exc}")
+        finally:
+            _full_scan_status.update({
+                "running": False,
+                "finishedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
+            })
+            _full_scan_lock.release()
+
+    threading.Thread(target=_refresh, name="full-market-refresh", daemon=True).start()
+    return True
 
 
 @lru_cache(maxsize=256)
@@ -47,7 +93,11 @@ def favicon():
 @app.get("/api/scan")
 def api_scan():
     try:
-        return jsonify(_json_safe(scan_market()))
+        payload = _json_safe(scan_market())
+        if payload.get("staleData"):
+            trigger_full_scan_async()
+        payload["fullScanRefresh"] = dict(_full_scan_status)
+        return jsonify(payload)
     except Exception as exc:
         return jsonify(
             {
@@ -61,17 +111,11 @@ def api_scan():
 
 @app.get("/api/scan/refresh")
 def api_scan_refresh():
-    try:
-        return jsonify(_json_safe(scan_market(force=True)))
-    except Exception as exc:
-        return jsonify(
-            {
-                "status": "error",
-                "message": str(exc),
-                "safeMode": True,
-                "stocks": [],
-            }
-        ), 503
+    started = trigger_full_scan_async()
+    payload = _json_safe(scan_market())
+    payload["refreshAccepted"] = started
+    payload["fullScanRefresh"] = dict(_full_scan_status)
+    return jsonify(payload), 202 if started else 200
 
 
 @app.get("/api/health")
@@ -84,6 +128,7 @@ def api_health():
             "unverifiedRecommendations": False,
             "orderExecution": "disabled",
             "safety": "Sinyaller yalnızca karar desteğidir; otomatik emir gönderilmez.",
+            "fullScanRefresh": dict(_full_scan_status),
         }
     )
 
@@ -150,6 +195,33 @@ def api_market_wind():
         return jsonify({"status": "error", "message": str(exc)}), 503
 
 
+@app.get("/api/commodity-groups")
+def api_commodity_groups():
+    """Visible gold, silver, copper and Brent relationship groups."""
+    now = time.time()
+    force = str(request.args.get("refresh", "")).lower() in {"1", "true", "yes"}
+    with _commodity_group_cache_lock:
+        cached = _commodity_group_cache.get("payload")
+        created_at = float(_commodity_group_cache.get("createdAt") or 0.0)
+        if cached and not force and now - created_at < COMMODITY_GROUP_CACHE_SECONDS:
+            return jsonify(cached)
+
+    try:
+        scan_payload = dict(scan_market())
+        commodity_rows = intraday_commodity_snapshots(force=force)
+        symbols = [f"{ticker}.IS" for ticker in all_group_tickers()]
+        delayed_quotes = _download_delayed_quotes(symbols)
+        payload = _json_safe(
+            build_commodity_group_snapshot(scan_payload, commodity_rows, delayed_quotes)
+        )
+        with _commodity_group_cache_lock:
+            _commodity_group_cache["createdAt"] = now
+            _commodity_group_cache["payload"] = payload
+        return jsonify(payload)
+    except Exception as exc:
+        return jsonify({"status": "error", "message": str(exc), "groups": []}), 503
+
+
 @app.get("/api/analyst-alerts")
 def api_analyst_alerts():
     """External analyst levels and triggered history, kept separate from model signals."""
@@ -191,7 +263,18 @@ def api_analyst_notes():
 
 @app.get("/api/notifications")
 def api_notifications():
-    return jsonify({"status": "ok", "notifications": notification_log(), "tracking": tracking_log(), "worker": worker_status()})
+    try:
+        limit = int(request.args.get("limit", "500"))
+    except (TypeError, ValueError):
+        limit = 500
+    date = str(request.args.get("date", "")).strip() or None
+    return jsonify({
+        "status": "ok",
+        "notifications": notification_log(limit=limit, date=date),
+        "tracking": tracking_log(),
+        "worker": worker_status(),
+        "filters": {"date": date, "limit": max(1, min(limit, 2000))},
+    })
 
 
 @app.post("/api/tracking/manual")
@@ -221,8 +304,8 @@ def _opportunity_loop():
         if _worker_enabled:
             try:
                 run_opportunity_scan()
-            except Exception:
-                pass
+            except Exception as exc:
+                print(f"[OPPORTUNITY WORKER ERROR] {type(exc).__name__}: {exc}")
         time.sleep(interval)
 
 
@@ -239,8 +322,8 @@ def _keep_alive_loop():
                 req = urllib.request.Request(url, headers={"User-Agent": "KeepAlivePinger/1.0"})
                 with urllib.request.urlopen(req, timeout=15):
                     pass
-            except Exception:
-                pass
+            except Exception as exc:
+                print(f"[KEEP ALIVE ERROR] {url}: {type(exc).__name__}: {exc}")
 
 
 @app.get("/api/backtest/<ticker>")
@@ -265,8 +348,8 @@ def trigger_scan_async():
         def _worker():
             try:
                 run_opportunity_scan()
-            except Exception:
-                pass
+            except Exception as exc:
+                print(f"[ASYNC SCAN ERROR] {type(exc).__name__}: {exc}")
             finally:
                 _scan_lock.release()
         threading.Thread(target=_worker, daemon=True).start()
@@ -274,7 +357,6 @@ def trigger_scan_async():
 
 @app.get("/api/auto-portfolio")
 def api_auto_portfolio():
-    trigger_scan_async()
     try:
         from auto_portfolio import load_portfolio
         return jsonify({"status": "ok", "portfolio": load_portfolio()})
@@ -298,9 +380,8 @@ def _ensure_threads():
     if _threads_started:
         return
     _threads_started = True
-    if _worker_enabled:
-        threading.Thread(target=_opportunity_loop, name="opportunity-worker", daemon=True).start()
-        threading.Thread(target=_keep_alive_loop, name="keep-alive-worker", daemon=True).start()
+    threading.Thread(target=_opportunity_loop, name="opportunity-worker", daemon=True).start()
+    threading.Thread(target=_keep_alive_loop, name="keep-alive-worker", daemon=True).start()
 
 
 _ensure_threads()

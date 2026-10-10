@@ -11,17 +11,24 @@ import urllib.request
 import zipfile
 from pathlib import Path
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import numpy as np
 import pandas as pd
 import yfinance as yf
 
+try:
+    import borsapy as bp
+except ImportError:  # Optional locally; Yahoo remains the fallback.
+    bp = None
+
 
 BENCHMARK = "XU100.IS"
 UNIVERSE_FLAG = "bist100"
 CACHE_TTL_SECONDS = 10 * 60
+COMMODITY_CACHE_TTL_SECONDS = 60
+DISPLAY_QUOTE_CACHE_TTL_SECONDS = 2 * 60
 BIST_BULLETIN_URL = (
     "https://borsaistanbul.com/data/thb/{year}/{month}/thb{stamp}1.zip"
 )
@@ -59,6 +66,9 @@ DISPLAY_NAMES: dict[str, str] = {
     "THYAO": "Türk Hava Yolları",
     "TOASO": "Tofaş",
     "TRALT": "Türk Altın İşletmeleri",
+    "PRKAB": "Türk Prysmian Kablo",
+    "RUZYE": "RUZY Madencilik ve Enerji",
+    "TRCAS": "Turcas Petrol",
     "TTKOM": "Türk Telekom",
     "TUPRS": "Tüpraş",
     "VAKBN": "VakıfBank",
@@ -92,6 +102,9 @@ SECTOR_BY_TICKER: dict[str, str] = {
     "THYAO": "Ulaşım",
     "TOASO": "Otomotiv",
     "TRALT": "Madencilik",
+    "PRKAB": "Metal",
+    "RUZYE": "Madencilik",
+    "TRCAS": "Enerji",
     "TTKOM": "İletişim",
     "TUPRS": "Enerji",
     "VAKBN": "Banka",
@@ -101,6 +114,10 @@ SECTOR_BY_TICKER: dict[str, str] = {
 
 _cache_lock = threading.Lock()
 _cache: dict[str, Any] = {"created_at": 0.0, "payload": None}
+_commodity_cache_lock = threading.Lock()
+_commodity_cache: dict[str, Any] = {"created_at": 0.0, "payload": None}
+_display_quote_cache_lock = threading.Lock()
+_display_quote_cache: dict[str, Any] = {"created_at": 0.0, "payload": None}
 _DESKTOP_EXCEL = Path.home() / "Desktop" / "Hisselerin_Teknik_Verileri.xlsx"
 _PROJECT_EXCEL = Path(__file__).resolve().parent / "Hisselerin_Teknik_Verileri.xlsx"
 EXCEL_NOTES_PATH = _DESKTOP_EXCEL if _DESKTOP_EXCEL.exists() else _PROJECT_EXCEL
@@ -310,16 +327,31 @@ def _macro_snapshots(
     trading_date: date,
     official_indices: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Best-effort delayed macro strip; never used in stock scoring."""
-    symbols = {"BIST30": "XU030.IS", "BIST500": "XU500.IS", "USD/TRY": "TRY=X", "EUR/TRY": "EURTRY=X"}
+    """Best-effort delayed macro strip including commodities (Gold, Silver, Brent, Copper)."""
+    symbols = {
+        "BIST30": "XU030.IS",
+        "BIST500": "XU500.IS",
+        "USD/TRY": "TRY=X",
+        "EUR/TRY": "EURTRY=X",
+        "ONS ALTIN ($)": "GC=F",
+        "ONS GÜMÜŞ ($)": "SI=F",
+        "BRENT PETROL ($)": "BZ=F",
+        "BAKIR ($)": "HG=F",
+    }
     try:
-        frame = yf.download(list(symbols.values()), period="5d", interval="1d", group_by="ticker", auto_adjust=False, progress=False, threads=True)
+        frame = yf.download(list(symbols.values()), period="5d", interval="1d", group_by="ticker", auto_adjust=False, progress=False, threads=False)
     except Exception:
         return []
     result = []
+    usd_try_val = None
+    gold_ons_val = None
+
     for label, symbol in symbols.items():
         try:
-            close = frame[symbol]["Close"].dropna()
+            sub = frame[symbol] if symbol in frame else None
+            if sub is None or "Close" not in sub:
+                continue
+            close = sub["Close"].dropna()
             if len(close) < 1:
                 continue
             yahoo_value = float(close.iloc[-1])
@@ -340,6 +372,12 @@ def _macro_snapshots(
                 daily = round((value / previous - 1) * 100, 2)
             else:
                 daily = None
+
+            if label == "USD/TRY":
+                usd_try_val = value
+            elif label == "ONS ALTIN ($)":
+                gold_ons_val = value
+
             result.append({
                 "label": label,
                 "value": round(value, 4),
@@ -349,6 +387,97 @@ def _macro_snapshots(
             })
         except (KeyError, IndexError, TypeError, ValueError):
             continue
+
+    if usd_try_val and gold_ons_val:
+        gram_altin = (gold_ons_val * usd_try_val) / 31.1035
+        result.append({
+            "label": "GRAM ALTIN (TL)",
+            "value": round(gram_altin, 2),
+            "daily": next((r.get("daily") for r in result if r.get("label") == "ONS ALTIN ($)"), None),
+            "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "source": "Ons Altın & USD/TRY türetilmiş"
+        })
+
+    return result
+
+
+def intraday_commodity_snapshots(force: bool = False) -> list[dict[str, Any]]:
+    """Return best-effort 5-minute commodity prices with daily and 15-minute moves."""
+    now = time.time()
+    with _commodity_cache_lock:
+        cached = _commodity_cache.get("payload")
+        created_at = float(_commodity_cache.get("created_at") or 0.0)
+        if not force and cached and now - created_at < COMMODITY_CACHE_TTL_SECONDS:
+            return [dict(item) for item in cached]
+
+    symbols = {
+        "ONS ALTIN ($)": "GC=F",
+        "ONS GÜMÜŞ ($)": "SI=F",
+        "BRENT PETROL ($)": "BZ=F",
+        "BAKIR ($)": "HG=F",
+    }
+    try:
+        frame = yf.download(
+            list(symbols.values()),
+            period="2d",
+            interval="5m",
+            group_by="ticker",
+            auto_adjust=False,
+            progress=False,
+            prepost=True,
+            threads=False,
+            timeout=20,
+        )
+    except Exception as exc:
+        print(f"[COMMODITY DATA ERROR] {type(exc).__name__}: {exc}")
+        return []
+
+    result: list[dict[str, Any]] = []
+    for label, symbol in symbols.items():
+        try:
+            sub = frame[symbol] if symbol in frame else None
+            if sub is None or "Close" not in sub:
+                continue
+            close = sub["Close"].dropna()
+            if close.empty:
+                continue
+
+            latest_value = float(close.iloc[-1])
+            latest_at = pd.Timestamp(close.index[-1])
+            index_dates = pd.Index(pd.to_datetime(close.index).date)
+            prior_days = close[index_dates < latest_at.date()]
+            previous_close = float(prior_days.iloc[-1]) if not prior_days.empty else None
+            daily = (
+                round((latest_value / previous_close - 1) * 100, 3)
+                if previous_close and previous_close > 0
+                else None
+            )
+
+            lookback_at = latest_at - pd.Timedelta(minutes=15)
+            older = close[pd.to_datetime(close.index) <= lookback_at]
+            short_reference = float(older.iloc[-1]) if not older.empty else None
+            short_change = (
+                round((latest_value / short_reference - 1) * 100, 3)
+                if short_reference and short_reference > 0
+                else None
+            )
+
+            result.append({
+                "label": label,
+                "value": round(latest_value, 4),
+                "daily": daily,
+                "timestamp": latest_at.isoformat(),
+                "source": "Yahoo Finance emtia (5 dk)",
+                "shortChange": short_change,
+                "shortWindowMinutes": 15,
+            })
+        except (KeyError, IndexError, TypeError, ValueError, ZeroDivisionError) as exc:
+            print(f"[COMMODITY PARSE ERROR] {symbol}: {type(exc).__name__}: {exc}")
+
+    if result:
+        with _commodity_cache_lock:
+            _commodity_cache["created_at"] = now
+            _commodity_cache["payload"] = [dict(item) for item in result]
     return result
 
 
@@ -1219,21 +1348,66 @@ def _download_history(symbols: list[str]) -> pd.DataFrame:
         group_by="ticker",
         auto_adjust=True,
         progress=False,
-        threads=True,
+        threads=False,
     )
 
 
 def _download_delayed_quotes(symbols: list[str]) -> dict[str, dict[str, Any]]:
-    """Best-effort 15-minute delayed display quotes; never used for signals."""
+    """Fetch the newest available delayed display quote; never used for signals.
+
+    Five-minute candles avoid selecting the previous 15-minute bucket at the
+    end of a session (for example 17:45 instead of the final 18:00 print).
+    The exchange feed remains delayed, so this is still display-only data.
+    """
+    if bp is not None:
+        try:
+            stream = bp.TradingViewStream()
+            stream.connect()
+            tickers = [symbol.removesuffix(".IS") for symbol in symbols]
+            for ticker in tickers:
+                stream.subscribe(ticker)
+            quotes: dict[str, dict[str, Any]] = {}
+            for ticker in tickers:
+                try:
+                    item = stream.wait_for_quote(ticker, timeout=4)
+                    raw = item.get("_raw") or {}
+                    stamp = raw.get("lp_time") or item.get("timestamp")
+                    timestamp = (
+                        datetime.fromtimestamp(float(stamp), tz=timezone.utc)
+                        .astimezone()
+                        .isoformat()
+                        if stamp
+                        else None
+                    )
+                    price = _safe_float(item.get("last"))
+                    if price is None:
+                        continue
+                    quotes[ticker] = {
+                        "price": round(price, 4),
+                        "previousClose": _safe_float(item.get("prev_close")),
+                        "daily": _safe_float(item.get("change_percent")),
+                        "timestamp": timestamp,
+                        "source": "TradingView / BIST (gecikmeli)",
+                        "verified": True,
+                        "chart": [],
+                    }
+                except Exception:
+                    continue
+            stream.disconnect()
+            if quotes:
+                return quotes
+        except Exception:
+            pass
+
     try:
         frame = yf.download(
             symbols,
             period="2d",
-            interval="15m",
+            interval="5m",
             group_by="ticker",
             auto_adjust=False,
             progress=False,
-            threads=True,
+            threads=False,
         )
     except Exception:
         return {}
@@ -1248,8 +1422,22 @@ def _download_delayed_quotes(symbols: list[str]) -> dict[str, dict[str, Any]]:
             close = _safe_float(row.get("Close"))
             if close is None:
                 continue
+            row_dates = pd.Index(pd.to_datetime(rows.index).date)
+            prior_rows = rows[row_dates < pd.Timestamp(stamp).date()]
+            previous_close = (
+                _safe_float(prior_rows.iloc[-1].get("Close"))
+                if not prior_rows.empty
+                else None
+            )
+            daily = (
+                round((close / previous_close - 1) * 100, 3)
+                if previous_close and previous_close > 0
+                else None
+            )
             quotes[symbol.removesuffix(".IS")] = {
                 "price": round(close, 4),
+                "previousClose": round(previous_close, 4) if previous_close is not None else None,
+                "daily": daily,
                 "timestamp": stamp.isoformat(),
                 "source": "Yahoo Finance intraday (gecikmeli; gösterim amaçlı)",
                 "verified": False,
@@ -1262,6 +1450,75 @@ def _download_delayed_quotes(symbols: list[str]) -> dict[str, dict[str, Any]]:
         except (KeyError, IndexError, TypeError, ValueError):
             continue
     return quotes
+
+
+def _latest_display_payload(
+    payload: dict[str, Any],
+    *,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Overlay fresh delayed quotes without pretending the technical scan is fresh."""
+    stocks = payload.get("stocks") or []
+    if not stocks:
+        return payload
+
+    now = time.time()
+    with _display_quote_cache_lock:
+        cached = _display_quote_cache.get("payload")
+        created_at = float(_display_quote_cache.get("created_at") or 0.0)
+        use_cached = bool(cached) and not force and now - created_at < DISPLAY_QUOTE_CACHE_TTL_SECONDS
+
+    if use_cached:
+        quotes = cached
+    else:
+        symbols = [f"{stock['ticker']}.IS" for stock in stocks if stock.get("ticker")]
+        quotes = _download_delayed_quotes(symbols)
+        if quotes:
+            with _display_quote_cache_lock:
+                _display_quote_cache["created_at"] = now
+                _display_quote_cache["payload"] = quotes
+        elif cached:
+            quotes = cached
+        else:
+            return payload
+
+    result = dict(payload)
+    result_stocks = []
+    quote_timestamps = []
+    updated_count = 0
+    for original in stocks:
+        stock = dict(original)
+        ticker = str(stock.get("ticker") or "")
+        quote = quotes.get(ticker)
+        if quote and quote.get("price") is not None:
+            stock["delayedQuote"] = dict(quote)
+            stock["price"] = quote["price"]
+            stock["daily"] = quote.get("daily")
+            stock["priceSource"] = quote.get("source") or "Gecikmeli piyasa verisi"
+            stock["priceTimestamp"] = quote.get("timestamp")
+            stock["displayPriceOnly"] = True
+            updated_count += 1
+            if quote.get("timestamp"):
+                quote_timestamps.append(str(quote["timestamp"]))
+        result_stocks.append(stock)
+
+    latest_quote_at = max(quote_timestamps) if quote_timestamps else None
+    result["stocks"] = result_stocks
+    result["technicalDataDate"] = payload.get("dataDate")
+    result["technicalStale"] = bool(payload.get("staleData"))
+    result["displayQuoteAt"] = latest_quote_at
+    result["displayQuoteDate"] = latest_quote_at[:10] if latest_quote_at else None
+    result["displayQuotesUpdated"] = updated_count
+    result["displayPriceCurrent"] = bool(updated_count and latest_quote_at)
+    if latest_quote_at:
+        result["quoteMode"] = "15m-delayed-display"
+        result["quoteSource"] = "Yahoo Finance intraday (yaklaşık 15 dakika gecikmeli)"
+        if payload.get("staleData"):
+            result["delayNotice"] = (
+                f"Ekran fiyatları {latest_quote_at} zamanlı yaklaşık 15 dakika gecikmeli veridir. "
+                f"Teknik model {payload.get('dataDate', '—')} tarihli olduğundan model sinyalleri eski kabul edilir."
+            )
+    return result
 
 
 def _align_benchmark(
@@ -1290,17 +1547,18 @@ def _align_benchmark(
 def scan_market(force: bool = False) -> dict[str, Any]:
     now = time.time()
     with _cache_lock:
+        has_memory_payload = bool(_cache["payload"])
         if (
             not force
-            and _cache["payload"]
+            and has_memory_payload
             and now - _cache["created_at"] < CACHE_TTL_SECONDS
         ):
-            return _cache["payload"]
+            return _latest_display_payload(_cache["payload"])
 
     # Cold starts must never block the dashboard on a full network scan.
     # Serve the last verified snapshot immediately; an explicit refresh can
     # still request a fresh scan.
-    if not force:
+    if not force and not has_memory_payload:
         persisted = _load_last_successful_scan()
         if persisted and isinstance(persisted.get("stocks"), list) and persisted["stocks"]:
             persisted = dict(persisted)
@@ -1310,10 +1568,10 @@ def scan_market(force: bool = False) -> dict[str, Any]:
             with _cache_lock:
                 _cache["created_at"] = now
                 _cache["payload"] = persisted
-            return persisted
+            return _latest_display_payload(persisted)
 
     try:
-        return _scan_market_fresh(now)
+        return _latest_display_payload(_scan_market_fresh(now), force=True)
     except Exception as exc:
         stale = _load_last_successful_scan()
         if not stale:
@@ -1328,7 +1586,7 @@ def scan_market(force: bool = False) -> dict[str, Any]:
         with _cache_lock:
             _cache["created_at"] = now
             _cache["payload"] = stale
-        return stale
+        return _latest_display_payload(stale)
 
 
 def build_market_wind_report(frame: pd.DataFrame) -> dict[str, Any]:

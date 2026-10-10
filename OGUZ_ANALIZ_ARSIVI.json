@@ -10,34 +10,63 @@
   {
     "ticker": "KRONT",
     "name": "Kron Telekomünikasyon Hizmetleri",
-    "entry_level": 22.16,
-    "current_live_price": 24.26,
+    "entry_level": 18.0,
+    "current_live_price": null,
     "performance": "+9.48%",
-    "note": "[Oğuz Analizi] 22.16₺ ve 22.80₺ bakılabilir, %5 direnç bölgesi."
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz][2026-06-02] KRONT 18 TL seviyesinden yapay zekâ alanında çalışan şirket olarak takip ediliyor; ekranda tutan eden varsa değerlendirecek notu.",
+    "previous_records": [
+      {
+        "entry_level": 22.16,
+        "support": null,
+        "resistance": null,
+        "current_live_price": 24.26,
+        "note": "[Oğuz Analizi] 22.16₺ ve 22.80₺ bakılabilir, %5 direnç bölgesi."
+      }
+    ],
+    "captured_date": "2026-08-14"
   },
   {
     "ticker": "YAYLA",
-    "name": "Yayla Enerji Üretim Turizm",
-    "entry_level": 23.1,
-    "current_live_price": 22.98,
-    "performance": "-0.52%",
-    "note": "[Oğuz Analizi] 23.10₺ ve 23.78₺ tradelik bakılabilir, 24₺ hareketi."
+    "name": "Yayla Enerji Üretim Turizm A.Ş.",
+    "entry_level": 21.2,
+    "current_live_price": 25.14,
+    "performance": "+7.17%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-14] YAYLA 21,20 TL takip seviyesi; 25,14 TL ekranda görüldü. Görselde kısa vadede %20 notu var; yüzde TL direnç kabul edilmedi.",
+    "captured_date": "2026-08-14",
+    "observed_at": "10:11",
+    "observed_session_change_pct": 5.48,
+    "percent_comment": 7.5,
+    "previous_records": [
+      {
+        "entry_level": 20.9,
+        "observed_price": 22.34,
+        "performance": "+6.89%",
+        "note": "[Oğuz Telegram] Yayla 20,90 TL tradelik bakabiliriz (%7 prim)."
+      },
+      {
+        "entry_level": 21.2,
+        "support": null,
+        "resistance": null,
+        "current_live_price": 22.72,
+        "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] YAYLA 21,20 TL takip seviyesi. Ekranda 22,72 TL ve günlük %+5,48 görülmüş; ayrıca '%7,5 burası direnç' yorumu paylaşılmıştır. Yüzde ifadesi TL direnci değildir."
+      }
+    ]
   },
   {
     "ticker": "DOFRB",
     "name": "Dof Robotik Sanayi A.Ş.",
-    "entry_level": 75.0,
-    "current_live_price": 151.8,
-    "performance": "+102.40%",
-    "note": "[Oğuz Analizi] 75₺'den 90₺ ve 107.60₺ seviyesine hareket."
+    "entry_level": 134.0,
+    "current_live_price": 140.3,
+    "performance": "+4.70%",
+    "note": "[Oğuz Telegram] Dofrb 134₺ bakılabilir. 140.30₺ direnç seviyesi."
   },
   {
     "ticker": "MEYSU",
     "name": "Meysu Gıda Sanayi A.Ş.",
-    "entry_level": 13.03,
-    "current_live_price": 13.77,
-    "performance": "+5.68%",
-    "note": "[Oğuz Analizi] Meysu 13.03₺ tradelik bakıyorum (%6.5 marj)."
+    "entry_level": 10.99,
+    "current_live_price": 10.99,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram] Meysu 10.99₺ takibe alındı."
   },
   {
     "ticker": "EKOS",
@@ -58,26 +87,47 @@
   {
     "ticker": "OBASE",
     "name": "Obase Bilgisayar ve Danışmanlık",
-    "entry_level": 47.98,
-    "current_live_price": 44.44,
+    "entry_level": 39.0,
+    "current_live_price": 39.72,
     "performance": "-7.38%",
-    "note": "[Oğuz Analizi] Obase 47.98₺ seviyesinden takibe alındı."
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-14] OBASE 39 TL takip seviyesi.",
+    "previous_records": [
+      {
+        "entry_level": 47.98,
+        "support": null,
+        "resistance": null,
+        "current_live_price": 44.44,
+        "note": "[Oğuz Analizi] Obase 47.98₺ seviyesinden takibe alındı."
+      }
+    ],
+    "captured_date": "2026-08-14"
   },
   {
     "ticker": "NETCD",
     "name": "Netcad Yazılım A.Ş.",
-    "entry_level": 144.5,
-    "current_live_price": 139.3,
-    "performance": "-3.60%",
-    "note": "[Oğuz Analizi] Netcd 144.50₺ takibe alındı (%3.5 marj)."
+    "entry_level": 136.5,
+    "current_live_price": 142.4,
+    "performance": "+15.62%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-14] NETCD 136,50 TL takip seviyesi; 145 TL direnç olarak belirtilmiş.",
+    "previous_records": [
+      {
+        "entry_level": 128.0,
+        "support": null,
+        "resistance": null,
+        "current_live_price": 148.0,
+        "note": "[Oğuz Telegram] Netcd 128₺ değerlendirilebilir (148₺ tavan hareketi)."
+      }
+    ],
+    "resistance": 145.0,
+    "captured_date": "2026-08-14"
   },
   {
     "ticker": "ASTOR",
     "name": "Astor Enerji A.Ş.",
-    "entry_level": 286.0,
-    "current_live_price": 297.0,
-    "performance": "+3.85%",
-    "note": "[Oğuz Analizi] 286₺ Astor bakılabilir, 295₺ ve 299₺ dirençleri."
+    "entry_level": 288.5,
+    "current_live_price": 302.75,
+    "performance": "+4.94%",
+    "note": "[Oğuz Telegram] Astor 288,50₺ tradelik bakılabilir. 300₺'de direnç."
   },
   {
     "ticker": "IZMDC",
@@ -193,11 +243,26 @@
   },
   {
     "ticker": "EKDMR",
-    "name": "Ekinciler Demir Çelik A.Ş.",
-    "entry_level": 54.1,
-    "current_live_price": 51.65,
-    "performance": "-4.53%",
-    "note": "[Oğuz Analizi] Ekinciler Demir Çelik 54.10₺ takibe alındı."
+    "name": "Ekinciler Demir ve Çelik Sanayi A.Ş.",
+    "entry_level": 45.52,
+    "current_live_price": 46.7,
+    "performance": "+2.59%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] EKDMR 45,52 TL takip seviyesi. 12:51 civarında 46,40 TL / günlük %+2,43 ve '%2'; 14:03 civarında 46,70 TL / günlük %+3,09 ve '%3' güncellemesi paylaşılmıştır. Yüzdeler seans içi hareket notudur, TL direnç değildir.",
+    "captured_date": "2026-08-12",
+    "observed_at": "14:03",
+    "observed_session_change_pct": 3.09,
+    "percent_milestones": [
+      2.0,
+      3.0
+    ],
+    "previous_records": [
+      {
+        "entry_level": 47.3,
+        "observed_price": 46.74,
+        "performance": "-1.18%",
+        "note": "[Oğuz Telegram] EKDMR 47,30 TL bakılabilir."
+      }
+    ]
   },
   {
     "ticker": "MOGAN",
@@ -222,5 +287,290 @@
     "current_live_price": 2048.0,
     "performance": "-6.06%",
     "note": "[Oğuz Analizi] Destek Faktoring tradelik takip (Giriş ~2.180 TL, Anlık ~2.048 TL)."
+  },
+  {
+    "ticker": "AKFYE",
+    "name": "Akfen Yenilenebilir Enerji A.Ş.",
+    "entry_level": 23.2,
+    "current_live_price": 24.38,
+    "performance": "+5.08%",
+    "note": "[Oğuz Telegram] Buna 23₺'de 23,40₺ ortalama yapabilir. 24.50₺ direnç."
+  },
+  {
+    "ticker": "PRKME",
+    "name": "Park Elektrik Üretim Madencilik A.Ş.",
+    "entry_level": 18.4,
+    "current_live_price": 19.65,
+    "performance": "+6.79%",
+    "note": "[Oğuz Telegram / Bakır Takip] Açılışta Prkme 18,40₺ bakabilirsiniz (%9 kazanç)."
+  },
+  {
+    "ticker": "BETAE",
+    "name": "Beta Enerji ve Teknoloji A.Ş.",
+    "entry_level": 78.0,
+    "current_live_price": 89.8,
+    "performance": "+15.13%",
+    "note": "[Oğuz Telegram] Betae 78₺ tradelik bakılabilir. 89.80₺ tavan takibi."
+  },
+  {
+    "ticker": "ENERY",
+    "name": "Enerya Enerji A.Ş.",
+    "entry_level": 8.6,
+    "current_live_price": 9.0,
+    "performance": "+4.65%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] ENERY için 8,60 TL civarına maliyet düşürme seviyesi paylaşıldı. Ekranda 9,00 TL ve günlük %+7,78 görülmüş; '%4,5 burası direnç' yorumu ayrıca kaydedilmiştir. Yüzde ifadesi TL direnci değildir.",
+    "captured_date": "2026-08-12",
+    "observed_at": "10:59",
+    "observed_session_change_pct": 7.78,
+    "percent_comment": 4.5,
+    "level_role": "maliyet düşürme",
+    "previous_records": [
+      {
+        "entry_level": 8.86,
+        "observed_price": 11.2,
+        "performance": "+26.41%",
+        "note": "[Oğuz Telegram] ENERY 8,86 TL buradan değerlendiriyorum."
+      }
+    ]
+  },
+  {
+    "ticker": "TRALT",
+    "name": "Türk Altın İşletmeleri A.Ş.",
+    "entry_level": 12.0,
+    "current_live_price": 12.45,
+    "performance": "+3.75%",
+    "note": "[Oğuz Telegram / Emtia Takip] Altın emtiasına duyarlı altın madenciliği takibi."
+  },
+  {
+    "ticker": "PRKAB",
+    "name": "Türk Prysmian Kablo ve Sistemleri A.Ş.",
+    "entry_level": 33.88,
+    "current_live_price": 33.88,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram / Bakır Takip] Prkab 33.88₺ seviyesinden bakır kablo/maden takibi."
+  },
+  {
+    "ticker": "CVKMD",
+    "name": "CVK Maden İşletmeleri Sanayi ve Ticaret A.Ş.",
+    "entry_level": 14.7,
+    "current_live_price": 15.95,
+    "performance": "+8.50%",
+    "note": "[Oğuz Telegram / Maden Takip] Cvkmd 14,70₺ yine bakılabilir."
+  },
+  {
+    "ticker": "AYDEM",
+    "name": "Aydem Yenilenebilir Enerji A.Ş.",
+    "entry_level": 23.0,
+    "current_live_price": 25.74,
+    "performance": "+3.56%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-14] AYDEM 23 TL takip seviyesi. Tutan varsa şirket ilişkileri ve bilanço açıklaması nedeniyle değerlendirme notu.",
+    "previous_records": [
+      {
+        "entry_level": 23.0,
+        "support": null,
+        "resistance": null,
+        "current_live_price": 23.82,
+        "note": "[Oğuz Telegram] Aydem 23₺ takibe alındı."
+      }
+    ],
+    "captured_date": "2026-08-14"
+  },
+  {
+    "ticker": "SARKY",
+    "name": "Sarkuysan Elektrolitik Bakır Sanayi A.Ş.",
+    "entry_level": 23.88,
+    "current_live_price": 24.8,
+    "performance": "+3.85%",
+    "note": "[Oğuz Telegram / Bakır Takip] Sarky 23,88₺ - 23,50₺'lere düşerse mutlaka takibe alınabilir."
+  },
+  {
+    "ticker": "ZGYO",
+    "name": "Zergay Gayrimenkul Yatırım Ortaklığı A.Ş.",
+    "entry_level": 33.9,
+    "current_live_price": 33.9,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram] Zgyo 33.90₺ takibe alındı."
+  },
+  {
+    "ticker": "PENGD",
+    "name": "Penguen Gıda Sanayi A.Ş.",
+    "entry_level": 9.6,
+    "current_live_price": 9.79,
+    "performance": "+1.98%",
+    "note": "[Oğuz Telegram] Pengd 9,60₺ yine bakılabilir 9₺ dibi göz önünde tutularak."
+  },
+  {
+    "ticker": "PAHOL",
+    "name": "Pasifik Holding A.Ş.",
+    "entry_level": 1.27,
+    "current_live_price": 1.4,
+    "performance": "+10.24%",
+    "note": "[Oğuz Telegram] Pahol 1,27₺ tavan takibi."
+  },
+  {
+    "ticker": "KTLEV",
+    "name": "Katılımevim Tasarruf Finansman A.Ş.",
+    "entry_level": 37.28,
+    "current_live_price": 41.52,
+    "performance": "+11.37%",
+    "note": "[Oğuz Telegram] Ktlev alabilir (Tabandan %16 tepki)."
+  },
+  {
+    "ticker": "PASEU",
+    "name": "Pasifik Avrasya Lojistik Dış Ticaret A.Ş.",
+    "entry_level": 94.0,
+    "current_live_price": 94.0,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram] Paseu 94₺, 90₺'de ekleme yapacak şekilde değerlendiriyorum."
+  },
+  {
+    "ticker": "JANTS",
+    "name": "Jantsa Jant Sanayi ve Ticaret A.Ş.",
+    "entry_level": 14.85,
+    "current_live_price": 15.66,
+    "performance": "+5.45%",
+    "note": "[Oğuz Telegram] Jants 14,85₺ açılışta bakabiliriz 14,50₺ altı. 16₺ direnç."
+  },
+  {
+    "ticker": "ARFYE",
+    "name": "Arf Bio Enerji Sanayi A.Ş.",
+    "entry_level": 29.0,
+    "current_live_price": 32.5,
+    "performance": "+12.07%",
+    "note": "[Oğuz Telegram] Arfye 29₺ takibi (%14 kazanç)."
+  },
+  {
+    "ticker": "INVEO",
+    "name": "Inveo Yatırım Holding A.Ş.",
+    "entry_level": 6.98,
+    "current_live_price": 7.11,
+    "performance": "+1.86%",
+    "note": "[Oğuz Telegram] Inveo 6,98₺. Lakin 6,80 civarında stop olunabilir."
+  },
+  {
+    "ticker": "MIATK",
+    "name": "Mia Teknoloji A.Ş.",
+    "entry_level": 29.84,
+    "current_live_price": 30.08,
+    "performance": "+0.80%",
+    "note": "[Oğuz Telegram] Miatk 29,84₺ tradelik bakılabilir (%1-2 marj)."
+  },
+  {
+    "ticker": "LOGO",
+    "name": "Logo Yazılım Sanayi ve Ticaret A.Ş.",
+    "entry_level": 133.9,
+    "current_live_price": 139.6,
+    "performance": "+4.26%",
+    "note": "[Oğuz Telegram] Logo 133,90₺ buradan takip ediyorum (%5 kazanç)."
+  },
+  {
+    "ticker": "ECOGR",
+    "name": "Ecogreen Enerji Holding A.Ş.",
+    "entry_level": 34.0,
+    "current_live_price": 35.0,
+    "performance": "+2.94%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] ECOGR 34 TL seviyesine yeniden gelirse bakılabilir. Ekranda 35,00 TL ve günlük %+3,12 görülmüş; '%3 dirençte' yorumu paylaşılmıştır. Yüzde ifadesi TL direnci değildir.",
+    "captured_date": "2026-08-12",
+    "observed_at": "13:32",
+    "observed_session_change_pct": 3.12,
+    "percent_comment": 3.0,
+    "previous_records": [
+      {
+        "entry_level": 34.4,
+        "observed_price": 36.32,
+        "performance": "+5.58%",
+        "note": "[Oğuz Telegram] ECOGR 34,40 TL trade verebilir."
+      }
+    ]
+  },
+  {
+    "ticker": "SDTTR",
+    "name": "SDT Uzay ve Savunma Teknolojileri A.Ş.",
+    "entry_level": 216.0,
+    "current_live_price": 255.5,
+    "performance": "+4.54%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-14] SDTTR 216 TL takip seviyesi; 190 TL geçmiş dip/destek olarak belirtilmiş, bu bölgeden değerlendirme notu.",
+    "previous_records": [
+      {
+        "entry_level": 216.0,
+        "support": null,
+        "resistance": null,
+        "current_live_price": 225.8,
+        "note": "[Oğuz Telegram] Sdttr 216₺, 190₺ dibi var. Buradan değerlendirilebilir."
+      }
+    ],
+    "support": 190.0,
+    "captured_date": "2026-08-14"
+  },
+  {
+    "ticker": "FONET",
+    "name": "Fonet Bilgi Teknolojileri A.Ş.",
+    "entry_level": 5.0,
+    "current_live_price": 5.1,
+    "performance": "+2.00%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] Ek olarak FONET 5 TL seviyesinde bakılabilir. Ekranda 5,10 TL ve günlük %+2,00 görülmüş; '%2 civarında' güncellemesi paylaşılmıştır.",
+    "captured_date": "2026-08-12",
+    "observed_at": "10:36",
+    "observed_session_change_pct": 2.0,
+    "percent_comment": 2.0,
+    "previous_records": [
+      {
+        "entry_level": 5.0,
+        "observed_price": 5.26,
+        "performance": "+5.20%",
+        "note": "[Oğuz Telegram] FONET 5 TL buradan tradelik bakılabilir."
+      }
+    ]
+  },
+  {
+    "ticker": "ENDAE",
+    "name": "Enda Enerji Holding A.Ş.",
+    "entry_level": 15.0,
+    "current_live_price": 18.48,
+    "performance": "+23.20%",
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] ENDAE 15 TL seviyesine değerse mutlaka değerlendirilebilir. Ekranda 18,48 TL ve günlük %+10,00 görülmüş; '2 seans %21' performans notu paylaşılmıştır.",
+    "captured_date": "2026-08-12",
+    "observed_at": "10:03",
+    "observed_session_change_pct": 10.0,
+    "period_performance_note": "2 seans %+21",
+    "previous_records": [
+      {
+        "entry_level": 15.0,
+        "observed_price": 16.71,
+        "performance": "+11.40%",
+        "note": "[Oğuz Telegram] ENDAE 15 TL'ye değerse mutlaka değerlendirilebilir (%11 prim)."
+      }
+    ]
+  },
+  {
+    "ticker": "ICUGS",
+    "name": "İşıklar Enerji ve Yapı Holding A.Ş.",
+    "entry_level": 5.42,
+    "current_live_price": 5.42,
+    "performance": "0.00%",
+    "note": "[Oğuz Telegram / Altın Madenciliği] İcugs 5,42₺. Altın madenciliği faaliyetleri var, takibe alınabilir."
+  },
+  {
+    "ticker": "CWENE",
+    "name": "Cw Enerji Mühendislik A.Ş.",
+    "entry_level": 36.0,
+    "current_live_price": null,
+    "performance": null,
+    "note": "[Oğuz Çelik][Borsa Eğitim/Analiz Kısa Vade][2026-08-12] CWENE hiç almayanlar 36 TL seviyesini tam ekleme planıyla değerlendirebilir. Daha önce alan ve ekleme yapacak olanlar 36-37 TL aralığında ekleme yapabilir.",
+    "captured_date": "2026-08-12",
+    "observed_at": "10:20",
+    "entry_zone": [
+      36.0,
+      37.0
+    ],
+    "level_role": "ilk alım / ekleme",
+    "previous_records": [
+      {
+        "entry_level": 200.0,
+        "observed_price": 280.0,
+        "performance": "+40.00%",
+        "note": "[Oğuz Telegram] CWENE %40 prim takibi."
+      }
+    ]
   }
 ]

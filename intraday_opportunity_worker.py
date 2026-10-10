@@ -5,6 +5,7 @@ It never places orders. Notifications are opt-in via NTFY_TOPIC and NTFY_TOKEN.
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import time
 import urllib.request
@@ -12,7 +13,8 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from threading import Lock
 
-from market_scanner import scan_market
+from commodity_groups import COMMODITY_GROUPS
+from market_scanner import intraday_commodity_snapshots, scan_market
 
 TR_TZ = timezone(timedelta(hours=3))
 
@@ -21,15 +23,35 @@ def get_tr_now() -> datetime:
     return datetime.now(TR_TZ)
 
 
-INTERVAL_SECONDS = int(os.getenv("OPPORTUNITY_INTERVAL_SECONDS", "900"))
+INTERVAL_SECONDS = int(os.getenv("OPPORTUNITY_INTERVAL_SECONDS", "60"))
+SUMMARY_GRACE_MINUTES = int(os.getenv("SUMMARY_GRACE_MINUTES", "10"))
+ANALYST_PROXIMITY_PCT = float(os.getenv("ANALYST_PROXIMITY_PCT", "0.75"))
+COMMODITY_SPIKE_PCT = float(os.getenv("COMMODITY_SPIKE_PCT", "0.50"))
+SEND_INDIVIDUAL_OPPORTUNITY_ALERTS = os.getenv(
+    "SEND_INDIVIDUAL_OPPORTUNITY_ALERTS", "0"
+).strip().lower() in {"1", "true", "yes"}
+ENABLE_TELEGRAM_NOTIFICATIONS = os.getenv(
+    "ENABLE_TELEGRAM_NOTIFICATIONS", "0"
+).strip().lower() in {"1", "true", "yes"}
 STATE_PATH = Path(__file__).with_name("intraday_alert_state.json")
 NOTIFICATION_LOG_PATH = Path(__file__).with_name("notification_log.json")
+NOTIFICATION_AUDIT_PATH = Path(
+    os.getenv(
+        "NOTIFICATION_AUDIT_PATH",
+        str(Path(__file__).with_name("data") / "notification_audit.jsonl"),
+    )
+)
 TRACKING_LOG_PATH = Path(__file__).with_name("tracking_log.json")
 MANUAL_TRACKING_PATH = Path(__file__).with_name("manual_tracking.json")
 OGUZ_ARSIV_PATH = Path(__file__).with_name("OGUZ_ANALIZ_ARSIVI.json")
+MERGEN_ARSIV_PATH = Path(__file__).with_name("AHMET_MERGEN_ANALIZ_ARSIVI.json")
 EXCEL_PATH = Path(__file__).with_name("Hisselerin_Teknik_Verileri.xlsx")
 DEFAULT_NTFY_TOPIC = "emirkan_bist_alarm"
 _status_lock = Lock()
+_run_lock = Lock()
+_notification_log_lock = Lock()
+_delivery_result_lock = Lock()
+_delivery_results: dict[str, dict] = {}
 _status = {
     "running": False,
     "lastRun": None,
@@ -67,33 +89,83 @@ def add_manual_tracking(ticker: str) -> list[str]:
     return rows
 
 
-def _append_notification_log(item: dict, message: str, delivered: bool) -> None:
+def _delivery_key(message: str) -> str:
+    return hashlib.sha256(message.encode("utf-8")).hexdigest()
+
+
+def _remember_delivery_result(message: str, result: dict) -> None:
+    with _delivery_result_lock:
+        _delivery_results[_delivery_key(message)] = result
+
+
+def _take_delivery_result(message: str, delivered: bool) -> dict:
+    with _delivery_result_lock:
+        result = _delivery_results.pop(_delivery_key(message), None)
+    if result:
+        return result
+    return {
+        "attemptedAt": get_tr_now().isoformat(timespec="seconds"),
+        "deliveryStatus": "sent" if delivered else "failed",
+        "channels": {},
+        "reason": "Teslimat ayrıntısı alınamadı.",
+    }
+
+
+def _persist_notification_row(row: dict) -> None:
+    """Keep a UI history and an append-only forensic delivery ledger."""
     try:
-        rows = json.loads(NOTIFICATION_LOG_PATH.read_text(encoding="utf-8")) if NOTIFICATION_LOG_PATH.exists() else []
-        if not isinstance(rows, list):
-            rows = []
-        if not delivered:
-            for previous in rows:
-                if previous.get("ticker") == item.get("ticker") and previous.get("status") == "not_sent":
-                    previous["timestamp"] = datetime.now().astimezone().isoformat(timespec="seconds")
-                    previous["message"] = message
-                    previous["attempts"] = int(previous.get("attempts", 1)) + 1
-                    NOTIFICATION_LOG_PATH.write_text(json.dumps(rows[:500], ensure_ascii=False), encoding="utf-8")
-                    return
-        rows.insert(0, {
-            "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
-            "ticker": item.get("ticker"),
-            "price": item.get("price"),
-            "strategy": item.get("strategy"),
-            "score": item.get("score"),
-            "message": message,
-            "status": "sent" if delivered else "not_sent",
-            "reason": "ntfy gönderimi başarısız veya NTFY_TOPIC eksik" if not delivered else "",
-            "attempts": 1,
-        })
-        NOTIFICATION_LOG_PATH.write_text(json.dumps(rows[:500], ensure_ascii=False), encoding="utf-8")
+        with _notification_log_lock:
+            rows = json.loads(NOTIFICATION_LOG_PATH.read_text(encoding="utf-8")) if NOTIFICATION_LOG_PATH.exists() else []
+            rows = rows if isinstance(rows, list) else []
+            rows.insert(0, row)
+            NOTIFICATION_LOG_PATH.write_text(json.dumps(rows[:2000], ensure_ascii=False), encoding="utf-8")
+
+            NOTIFICATION_AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
+            with NOTIFICATION_AUDIT_PATH.open("a", encoding="utf-8") as audit_file:
+                audit_file.write(json.dumps(row, ensure_ascii=False) + "\n")
     except (OSError, ValueError, TypeError):
         pass
+
+
+def _append_notification_log(item: dict, message: str, delivered: bool) -> None:
+    delivery = _take_delivery_result(message, delivered)
+    row = {
+        "timestamp": delivery.get("attemptedAt") or get_tr_now().isoformat(timespec="seconds"),
+        "ticker": item.get("ticker"),
+        "price": item.get("price"),
+        "strategy": item.get("strategy"),
+        "score": item.get("score"),
+        "message": message,
+        "status": delivery.get("deliveryStatus") or ("sent" if delivered else "failed"),
+        "reason": delivery.get("reason", ""),
+        "attempts": 1,
+        "delivery": delivery,
+    }
+    context = item.get("auditContext")
+    if isinstance(context, dict) and context:
+        row["context"] = context
+    _persist_notification_row(row)
+
+
+def _append_system_notification_log(
+    category: str,
+    message: str,
+    delivered: bool,
+    *,
+    ticker: str | None = None,
+    price: float | None = None,
+    score: float | None = None,
+    context: dict | None = None,
+) -> None:
+    """Record scheduled, commodity and analyst notifications for diagnostics."""
+    item = {
+        "ticker": ticker or category,
+        "price": price,
+        "strategy": category,
+        "score": score,
+        "auditContext": context or {},
+    }
+    _append_notification_log(item, message, delivered)
 
 
 def is_notification_window_open() -> bool:
@@ -107,36 +179,101 @@ def is_notification_window_open() -> bool:
 
 
 def _notify(message: str) -> bool:
+    attempted_at = get_tr_now().isoformat(timespec="seconds")
+    result = {
+        "attemptedAt": attempted_at,
+        "deliveryStatus": "failed",
+        "channels": {},
+        "reason": "",
+    }
     if not is_notification_window_open():
+        result["deliveryStatus"] = "blocked"
+        result["reason"] = "Bildirim penceresi kapalı (hafta içi 09:50–18:15 TR)."
+        _remember_delivery_result(message, result)
         return False
     sent = False
+    errors = []
     topic = os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()
     if topic:
         url = f"https://ntfy.sh/{topic}"
-        headers = {"Title": "Chartist Fibo-Scalp Pro", "Priority": "high", "Tags": "chart_with_upwards_trend,bell"}
+        is_oguz = "oğuz" in message.lower() or "oguz" in message.lower()
+        headers = {
+            "Title": "OĞUZ ANALİST ALARMI" if is_oguz else "Chartist Fibo-Scalp Pro",
+            "Priority": "max" if is_oguz else "high",
+            "Tags": "rotating_light,chart_with_upwards_trend" if is_oguz else "chart_with_upwards_trend,bell",
+        }
         token = os.getenv("NTFY_TOKEN", "").strip()
         if token:
             headers["Authorization"] = f"Bearer {token}"
         request = urllib.request.Request(url, data=message.encode("utf-8"), headers=headers, method="POST")
         try:
-            with urllib.request.urlopen(request, timeout=15):
+            with urllib.request.urlopen(request, timeout=15) as response:
+                provider_id = None
+                try:
+                    response_body = json.loads(response.read().decode("utf-8"))
+                    provider_id = response_body.get("id")
+                except (ValueError, UnicodeDecodeError, AttributeError):
+                    pass
+                result["channels"]["ntfy"] = {
+                    "status": "sent",
+                    "httpStatus": getattr(response, "status", 200),
+                    "messageId": provider_id,
+                    "topic": topic,
+                }
                 sent = True
         except Exception as exc:
+            result["channels"]["ntfy"] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+            errors.append(f"ntfy: {type(exc).__name__}: {exc}")
             print(f"[NOTIFY NTFY ERROR] {exc}")
+    else:
+        errors.append("NTFY_TOPIC eksik")
+        result["channels"]["ntfy"] = {"status": "not_configured"}
 
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
-    if bot_token and chat_id:
+    if ENABLE_TELEGRAM_NOTIFICATIONS and bot_token and chat_id:
         try:
             tg_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
             payload = json.dumps({"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}).encode("utf-8")
             req = urllib.request.Request(tg_url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
-            with urllib.request.urlopen(req, timeout=15):
+            with urllib.request.urlopen(req, timeout=15) as response:
+                result["channels"]["telegram"] = {
+                    "status": "sent",
+                    "httpStatus": getattr(response, "status", 200),
+                }
                 sent = True
-        except Exception:
-            pass
+        except Exception as exc:
+            result["channels"]["telegram"] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+            errors.append(f"telegram: {type(exc).__name__}: {exc}")
+            print(f"[NOTIFY TELEGRAM ERROR] {type(exc).__name__}: {exc}")
 
+    result["deliveryStatus"] = "sent" if sent else "failed"
+    result["reason"] = "" if sent else "; ".join(errors) or "Hiçbir bildirim kanalı teslimatı doğrulamadı."
+    _remember_delivery_result(message, result)
     return sent
+
+
+def send_audited_notification(
+    message: str,
+    *,
+    category: str,
+    ticker: str | None = None,
+    price: float | None = None,
+    score: float | None = None,
+    context: dict | None = None,
+) -> bool:
+    """Send once and always record the exact message, trigger and provider result."""
+    delivered = _notify(message)
+    _append_system_notification_log(
+        category,
+        message,
+        delivered,
+        ticker=ticker,
+        price=price,
+        score=score,
+        context=context,
+    )
+    return delivered
 
 
 def _append_trade_event(track: dict, event_type: str, price: float, now: str) -> None:
@@ -170,13 +307,12 @@ def _append_trade_event(track: dict, event_type: str, price: float, now: str) ->
         "realizedReturn": realized, "maxPrice": high, "maxReturn": maximum,
         "action": actions[event_type],
     }
-    try:
-        rows = json.loads(NOTIFICATION_LOG_PATH.read_text(encoding="utf-8")) if NOTIFICATION_LOG_PATH.exists() else []
-        rows = rows if isinstance(rows, list) else []
-        rows.insert(0, row)
-        NOTIFICATION_LOG_PATH.write_text(json.dumps(rows[:500], ensure_ascii=False), encoding="utf-8")
-    except (OSError, ValueError, TypeError):
-        pass
+    delivery = _take_delivery_result(message, delivered)
+    row["delivery"] = delivery
+    row["reason"] = delivery.get("reason", "")
+    if not delivered and delivery.get("deliveryStatus") in {"blocked", "failed"}:
+        row["status"] = delivery["deliveryStatus"]
+    _persist_notification_row(row)
     track["eventTypes"].append(event_type)
     track.setdefault("events", []).append(row)
 
@@ -252,12 +388,50 @@ def _load_analyst_levels() -> list[dict]:
                 entry = row.get("entry_level")
                 note = row.get("note", "")
                 source = "Oğuz Çelik" if "Oğuz" in note else "Analist"
-                if entry:
-                    levels.append({"ticker": ticker, "source": source, "entry": float(entry), "support": None, "resistance": None, "note": note})
+                entry_values = []
+                if entry not in (None, ""):
+                    entry_values.append(float(entry))
+                for zone_value in row.get("entry_zone") or []:
+                    try:
+                        parsed_zone_value = float(zone_value)
+                    except (TypeError, ValueError):
+                        continue
+                    if parsed_zone_value not in entry_values:
+                        entry_values.append(parsed_zone_value)
+                for entry_value in entry_values:
+                    levels.append({
+                        "ticker": ticker,
+                        "source": source,
+                        "entry": entry_value,
+                        "support": None,
+                        "resistance": None,
+                        "note": note,
+                        "name": row.get("name", ticker),
+                    })
     except Exception:
         pass
 
-    # 2. Load from Excel
+    # 2. Load structured Ahmet Mergen transcript archive.
+    try:
+        if MERGEN_ARSIV_PATH.exists():
+            rows = json.loads(MERGEN_ARSIV_PATH.read_text(encoding="utf-8"))
+            for row in rows:
+                ticker = str(row.get("ticker", "")).upper().strip()
+                if not ticker:
+                    continue
+                levels.append({
+                    "ticker": ticker,
+                    "source": row.get("source") or "Ahmet Mergen",
+                    "entry": row.get("entry_level"),
+                    "support": row.get("support"),
+                    "resistance": row.get("resistance"),
+                    "note": row.get("note", ""),
+                    "name": row.get("name", ticker),
+                })
+    except (OSError, ValueError, TypeError) as exc:
+        print(f"[MERGEN ARCHIVE ERROR] {type(exc).__name__}: {exc}")
+
+    # 3. Load from Excel
     try:
         if EXCEL_PATH.exists():
             import openpyxl
@@ -309,6 +483,32 @@ def _load_analyst_levels() -> list[dict]:
                             if note and "Mergen" in note and "Mergen" not in (l.get("note") or ""):
                                 l["note"] = l.get("note", "") + " | " + note
                             break
+            if "Aktif Alarmlar (Premium)" in wb.sheetnames:
+                alarm_ws = wb["Aktif Alarmlar (Premium)"]
+                for r in range(4, alarm_ws.max_row + 1):
+                    symbol = alarm_ws.cell(row=r, column=1).value
+                    rule = str(alarm_ws.cell(row=r, column=3).value or "")
+                    target = alarm_ws.cell(row=r, column=4).value
+                    active = str(alarm_ws.cell(row=r, column=5).value or "").strip().lower()
+                    note = str(alarm_ws.cell(row=r, column=7).value or "")
+                    if not symbol or target in (None, "") or active not in {"evet", "yes", "true", "1"}:
+                        continue
+                    ticker = str(symbol).upper().replace(".IS", "").strip()
+                    try:
+                        target_value = float(target)
+                    except (TypeError, ValueError):
+                        continue
+                    support = target_value if "<=" in rule else None
+                    resistance = target_value if ">=" in rule else None
+                    levels.append({
+                        "ticker": ticker,
+                        "source": "Ahmet Mergen" if "Mergen" in note else "Aktif Alarm",
+                        "entry": None,
+                        "support": support,
+                        "resistance": resistance,
+                        "note": note,
+                        "name": alarm_ws.cell(row=r, column=2).value or ticker,
+                    })
             wb.close()
     except Exception:
         pass
@@ -333,6 +533,28 @@ def check_analyst_level_alerts(payload: dict) -> None:
         if price:
             stocks_map[s["ticker"]] = {"price": float(price), "stock": s}
 
+    index_info = payload.get("index") or {}
+    if index_info.get("price"):
+        stocks_map["XU100"] = {
+            "price": float(index_info["price"]),
+            "stock": {"ticker": "XU100", "name": "BIST 100 Endeksi", "modelScore": "—"},
+        }
+
+    macro_tickers = {
+        "ONS ALTIN ($)": "GC=F",
+        "ONS GÜMÜŞ ($)": "SI=F",
+        "BRENT PETROL ($)": "BZ=F",
+        "BAKIR ($)": "HG=F",
+        "GRAM ALTIN (TL)": "GRAMALTIN",
+    }
+    for macro in payload.get("marketBoard", []):
+        ticker = macro_tickers.get(macro.get("label"))
+        if ticker and macro.get("value") not in (None, ""):
+            stocks_map[ticker] = {
+                "price": float(macro["value"]),
+                "stock": {"ticker": ticker, "name": macro.get("label"), "modelScore": "—"},
+            }
+
     for level in analyst_levels:
         ticker = level["ticker"]
         if ticker not in stocks_map:
@@ -347,8 +569,8 @@ def check_analyst_level_alerts(payload: dict) -> None:
         source = level.get("source", "Analist")
         name = level.get("name") or stock.get("name") or ticker
 
-        # Proximity threshold: within 2% of a key level
-        threshold = 0.02
+        # Alert close to the recorded level. A narrow default avoids very early alerts.
+        threshold = max(0.1, ANALYST_PROXIMITY_PCT) / 100.0
         alerts = []
 
         if entry and abs(price - entry) / entry <= threshold:
@@ -362,32 +584,32 @@ def check_analyst_level_alerts(payload: dict) -> None:
                 "emoji": "🎯"
             })
 
-        if support and price <= support * (1 + threshold):
+        if support and abs(price - support) / support <= threshold:
             diff_pct = round((price / support - 1) * 100, 2)
-            if diff_pct <= 2:
-                direction = "🟢 Destek seviyesinde TUTUNUYOR" if price >= support else "🔴 Destek seviyesi KIRILDI!"
-                alerts.append({
-                    "type": "DESTEK SEVİYESİ",
-                    "level": support,
-                    "direction": direction,
-                    "diff_pct": diff_pct,
-                    "emoji": "🛡️"
-                })
+            direction = "🟢 Destek seviyesinde TUTUNUYOR" if price >= support else "🔴 Destek seviyesi KIRILDI!"
+            alerts.append({
+                "type": "DESTEK SEVİYESİ",
+                "level": support,
+                "direction": direction,
+                "diff_pct": diff_pct,
+                "emoji": "🛡️"
+            })
 
-        if resistance and price >= resistance * (1 - threshold):
+        if resistance and abs(price - resistance) / resistance <= threshold:
             diff_pct = round((price / resistance - 1) * 100, 2)
-            if diff_pct >= -2:
-                direction = "🟢 Direnç seviyesi KIRILDI! Yukarı yön açıldı" if price >= resistance else "🟡 Direnç seviyesine YAKIN, satıcı gelebilir"
-                alerts.append({
-                    "type": "DİRENÇ SEVİYESİ",
-                    "level": resistance,
-                    "direction": direction,
-                    "diff_pct": diff_pct,
-                    "emoji": "🧱"
-                })
+            direction = "🟢 Direnç seviyesi KIRILDI! Yukarı yön açıldı" if price >= resistance else "🟡 Direnç seviyesine YAKIN, satıcı gelebilir"
+            alerts.append({
+                "type": "DİRENÇ SEVİYESİ",
+                "level": resistance,
+                "direction": direction,
+                "diff_pct": diff_pct,
+                "emoji": "🧱"
+            })
 
         for alert in alerts:
-            alert_key = f"analyst_{ticker}_{alert['type']}_{today_str}"
+            level_key = f"{float(alert['level']):.4f}"
+            source_key = str(source).replace(" ", "_")
+            alert_key = f"analyst_{ticker}_{source_key}_{alert['type']}_{level_key}_{today_str}"
             if state.get(alert_key):
                 continue
 
@@ -430,7 +652,20 @@ def check_analyst_level_alerts(payload: dict) -> None:
             else:
                 message += f"Giriş seviyesi {alert['level']:.2f} TL civarında. Analist bu seviyeyi alım için uygun görmüştü. Stop koyarak değerlendirilebilir."
 
+            # Start an independent analyst-performance record. This remains
+            # visible even if Ntfy delivery fails or the model is stale.
+            _start_or_update_analyst_track(
+                ticker=ticker,
+                name=name,
+                source=source,
+                alert_type=alert["type"],
+                level=float(alert["level"]),
+                price=price,
+                note=note,
+                now=get_tr_now().isoformat(timespec="seconds"),
+            )
             delivered = _notify(message)
+            _append_system_notification_log("analyst-level", message, delivered, ticker=ticker)
             if delivered:
                 state[alert_key] = True
                 changed = True
@@ -442,27 +677,22 @@ def check_analyst_level_alerts(payload: dict) -> None:
 def check_and_send_scheduled_summaries(payload: dict) -> None:
     now_dt = get_tr_now()
     today_str = now_dt.strftime("%Y-%m-%d")
-    hour = now_dt.hour
-    minute = now_dt.minute
-
-    # Determine current slot for TR Local Hours (UTC+3): 10:00, 12:00, 14:00, 16:00, 18:00, 18:30
+    slots = [
+        (10, 0, "10:00 (Seans Açılış Özet Bülteni)"),
+        (12, 0, "12:00 (Seans Ortası Özet Bülteni)"),
+        (14, 0, "14:00 (Öğleden Sonra Özet Bülteni)"),
+        (16, 0, "16:00 (Kapanış Öncesi Özet Bülteni)"),
+        (18, 0, "18:00 (Seans Kapanış ve Gün Sonu Bülteni)"),
+    ]
     slot_name = None
     slot_key = None
-    if hour == 10 and minute <= 30:
-        slot_name = "10:00 (Seans Açılış Özet Bülteni)"
-        slot_key = f"summary_{today_str}_1000"
-    elif hour == 12 and minute <= 30:
-        slot_name = "12:00 (Seans Ortası Özet Bülteni)"
-        slot_key = f"summary_{today_str}_1200"
-    elif hour == 14 and minute <= 30:
-        slot_name = "14:00 (Öğleden Sonra Özet Bülteni)"
-        slot_key = f"summary_{today_str}_1400"
-    elif hour == 16 and minute <= 30:
-        slot_name = "16:00 (Kapanış Öncesi Özet Bülteni)"
-        slot_key = f"summary_{today_str}_1600"
-    elif hour == 18 and minute <= 15:
-        slot_name = "18:00 (Seans Kapanış ve Gün Sonu Bülteni)"
-        slot_key = f"summary_{today_str}_1800"
+    for hour, minute, name in slots:
+        target = now_dt.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        elapsed_minutes = (now_dt - target).total_seconds() / 60.0
+        if 0 <= elapsed_minutes < SUMMARY_GRACE_MINUTES:
+            slot_name = name
+            slot_key = f"summary_{today_str}_{hour:02d}{minute:02d}"
+            break
 
     if not slot_name:
         return
@@ -479,21 +709,46 @@ def check_and_send_scheduled_summaries(payload: dict) -> None:
     try:
         p_val = float(xu100_price)
         if p_val <= 13850:
-            index_warning = "\n⚠️ *DİKKAT:* Endeks 13.850 TL kritik desteğinde! Aşağı düşerse sonraki durak 12.900 – 13.000 TL olabilir. Yükseliş için 14.250 TL üzerine çıkmalı."
+            index_warning = (
+                "\n⚠️ *DİKKAT (Ahmet Mergen):* Endeks 13.850 TL kritik desteğinde! "
+                "Eğer 13.230 TL desteği de kırılırsa sonraki durak 12.900 TL veya 12.500 TL seviyeleri olabilir. "
+                "Yukarı yönde tepki için 14.250 - 14.254 TL (50 günlük HO) direncinin aşılması gerekir."
+            )
         else:
-            index_warning = f"\nℹ️ *Endeks Durumu:* {p_val:,.2f} TL (13.850 TL kritik destektir; altına düşerse 12.900 TL riski doğar, 14.250 TL üzeri alım teyididir)."
+            index_warning = (
+                f"\nℹ️ *Endeks Analizi (Ahmet Mergen):* {p_val:,.2f} TL. "
+                "14.250 - 14.254 TL direnci aşılırsa yükseliş 14.600 TL veya 14.876 TL seviyelerine doğru yol alabilir. "
+                "13.850 TL altı kapanışlarda ise 13.230 TL ve 12.900 TL destekleri takip edilecektir."
+            )
     except Exception:
         index_warning = ""
 
     wind_text = f"BIST100: {xu100_price} TL (%{xu100_daily:+.2f}){index_warning}"
 
     stocks = payload.get("stocks", [])
-    top_candidates = sorted(stocks, key=lambda s: s.get("modelScore", 0), reverse=True)[:5]
+    # The scheduled bulletin is a shortlist, not a catalogue. Only show
+    # high-conviction OPEN signals; WATCH/weak candidates belong on the site.
+    candidates = [
+        s for s in stocks
+        if s.get("recommendation") == "OPEN"
+        and float(s.get("modelScore") or 0) >= 82
+        and float((s.get("componentScores") or {}).get("technical") or 0) >= 65
+        and float((s.get("componentScores") or {}).get("stop") or 0) >= 60
+        and float(s.get("rr") or 0) >= 1.8
+        and not any("RİSK" in str(b).upper() or "RISK" in str(b).upper() or "OBO" in str(b).upper() for b in (s.get("badges") or []))
+    ]
+    top_candidates = sorted(
+        candidates,
+        key=lambda s: s.get("modelScore", 0),
+        reverse=True,
+    )[:5]
     
     top_text_list = []
     for s in top_candidates:
-        targets = s.get("targets") or [s["price"], s["price"], s["price"]]
-        tp1 = targets[0] if len(targets) > 0 else s["price"]
+        quote = s.get("delayedQuote") or {}
+        current_price = quote.get("price") or s.get("price")
+        targets = s.get("targets") or [current_price, current_price, current_price]
+        tp1 = targets[0] if len(targets) > 0 else current_price
         tp2 = targets[1] if len(targets) > 1 else tp1
         tp3 = targets[2] if len(targets) > 2 else tp2
         stop = s.get("stop", "—")
@@ -501,8 +756,9 @@ def check_and_send_scheduled_summaries(payload: dict) -> None:
         badge_str = f" ({badge})" if badge else ""
         
         top_text_list.append(
-            f"📌 *#{s['ticker']}*{badge_str} — Model Puanı: *{s['modelScore']}*\n"
-            f"  • Güncel Fiyat: {s['price']} TL | Stop: {stop} TL\n"
+            f"📌 *#{s['ticker']}*{badge_str} — Model Puanı: *{s['modelScore']}* "
+            f"({s.get('recommendation', '—')})\n"
+            f"  • Güncel Fiyat: {current_price} TL | Stop: {stop} TL\n"
             f"  • Kâr Hedefleri: TP1: {tp1} TL | TP2: {tp2} TL | TP3: {tp3} TL"
         )
 
@@ -536,13 +792,16 @@ def check_and_send_scheduled_summaries(payload: dict) -> None:
         f"🏷️ *Sözlük:* SK3 = 3'lü Süper Konsensüs | ÇAO = Çifte Algo Onayı"
     )
 
-    if _notify(message):
+    delivered = _notify(message)
+    _append_system_notification_log("scheduled-summary", message, delivered)
+    if delivered:
         state[slot_key] = True
         _save_state(state)
 
 
 def check_intraday_price_movements(payload: dict) -> None:
-    """Check if any tracked stock has significant intraday price movements (e.g. >= 2% gain/loss) and push alerts."""
+    """Check if any tracked stock has reached a new 0.5% gain/loss milestone (+1.0%, +1.5%, +2.0%, +2.5%, etc.) and push alerts."""
+    import math
     state = _load_state()
     today_str = get_tr_now().strftime("%Y-%m-%d")
     changed = False
@@ -560,19 +819,35 @@ def check_intraday_price_movements(payload: dict) -> None:
         prev_close = float(prev_close)
         change_pct = round((price / prev_close - 1) * 100, 2)
 
-        # Triggers for +2.0%, +4.0%, +6.0%, and -3.0%
-        levels = []
-        if change_pct >= 6.0:
-            levels.append(("+6%", "🚀 *GÜÇLÜ RALLİ HAREKETİ*"))
-        elif change_pct >= 4.0:
-            levels.append(("+4%", "🔥 *SEANS İÇİ İVME KAZANDI*"))
-        elif change_pct >= 2.0:
-            levels.append(("+2%", "📈 *POZİTİF YÜKSELİŞ HAREKETİ*"))
-        elif change_pct <= -3.0:
-            levels.append(("-3%", "⚠️ *SEANS İÇİ GERİ ÇEKİLME*"))
+        steps = []
+        # Positive gain steps starting from +1.0% with 0.5% increments
+        if change_pct >= 1.0:
+            current_step = round(math.floor(change_pct * 2.0) / 2.0, 1)
+            step_val = 1.0
+            while step_val <= current_step:
+                if step_val >= 5.0:
+                    emoji_title = "🚀 *GÜÇLÜ RALLİ HAREKETİ*"
+                elif step_val >= 3.0:
+                    emoji_title = "🔥 *YÜKSEK İVME KAZANDI*"
+                elif step_val >= 2.0:
+                    emoji_title = "📈 *POZİTİF YÜKSELİŞ HAREKETİ*"
+                else:
+                    emoji_title = "📊 *KAZANÇ EŞİĞİ AŞILDI*"
+                
+                steps.append((step_val, emoji_title))
+                step_val = round(step_val + 0.5, 1)
 
-        for pct_tag, title in levels:
-            alert_key = f"move_{ticker}_{pct_tag}_{today_str}"
+        # Downside retreat steps starting from -2.0% with 0.5% increments
+        elif change_pct <= -2.0:
+            current_step = round(math.ceil(change_pct * 2.0) / 2.0, 1)
+            step_val = -2.0
+            while step_val >= current_step:
+                steps.append((step_val, "⚠️ *SEANS İÇİ GERİ ÇEKİLME*"))
+                step_val = round(step_val - 0.5, 1)
+
+        for step_val, title in steps:
+            tag_str = f"{step_val:+.1f}%"
+            alert_key = f"move_step_{ticker}_{tag_str}_{today_str}"
             if state.get(alert_key):
                 continue
 
@@ -581,7 +856,7 @@ def check_intraday_price_movements(payload: dict) -> None:
             note_str = next((n.get("Alarm Açıklaması / Talimatı") or n.get("Özel Açıklamalar / Analiz Notları") for n in notes if n.get("Alarm Açıklaması / Talimatı") or n.get("Özel Açıklamalar / Analiz Notları")), "Model Takibi")
 
             message = (
-                f"{title}\n\n"
+                f"{title} (Eşik: %{step_val:+.1f})\n\n"
                 f"📌 *Hisse:* #{ticker}\n"
                 f"💵 *Güncel Fiyat:* {price:.2f} TL (Günlük: %{change_pct:+.2f})\n"
                 f"⭐ *Model Puanı:* {model_score}\n"
@@ -590,6 +865,21 @@ def check_intraday_price_movements(payload: dict) -> None:
             )
 
             delivered = _notify(message)
+            _append_system_notification_log(
+                "price-movement",
+                message,
+                delivered,
+                ticker=ticker,
+                price=price,
+                score=model_score if isinstance(model_score, (int, float)) else None,
+                context={
+                    "trigger": "stock_daily_milestone",
+                    "thresholdPercent": step_val,
+                    "stockDailyPercent": change_pct,
+                    "previousClose": prev_close,
+                    "priceDataMode": "BIST yaklaşık 15 dk gecikmeli",
+                },
+            )
             if delivered:
                 state[alert_key] = True
                 changed = True
@@ -598,17 +888,226 @@ def check_intraday_price_movements(payload: dict) -> None:
         _save_state(state)
 
 
-def run_once() -> list[dict]:
+COMMODITY_MAPPING = COMMODITY_GROUPS
+
+
+def check_opening_diagnostic_alert(payload: dict) -> None:
+    """Send opening market commodity diagnostic and technical health check bulletin at 09:55 TR local time."""
+    now_dt = get_tr_now()
+    today_str = now_dt.strftime("%Y-%m-%d")
+    target = now_dt.replace(hour=9, minute=55, second=0, microsecond=0)
+    elapsed_minutes = (now_dt - target).total_seconds() / 60.0
+
+    # The 60-second worker should deliver at 09:55; a short grace handles startup delay.
+    if not (0 <= elapsed_minutes < SUMMARY_GRACE_MINUTES):
+        return
+
+    state = _load_state()
+    diag_key = f"opening_diag_{today_str}"
+    if state.get(diag_key):
+        return  # Already sent opening diagnostic today
+
+    market_board = payload.get("marketBoard", [])
+    gold_item = next((m for m in market_board if m.get("label") == "ONS ALTIN ($)"), {})
+    silver_item = next((m for m in market_board if m.get("label") == "ONS GÜMÜŞ ($)"), {})
+    brent_item = next((m for m in market_board if m.get("label") == "BRENT PETROL ($)"), {})
+    copper_item = next((m for m in market_board if m.get("label") == "BAKIR ($)"), {})
+
+    def _fmt_comm(item: dict) -> str:
+        val = item.get("value")
+        daily = item.get("daily")
+        if val is None or daily is None:
+            return "—"
+        return f"{val:,.2f} $ (*%{daily:+.2f}*)"
+
+    gold_str = _fmt_comm(gold_item)
+    silver_str = _fmt_comm(silver_item)
+    brent_str = _fmt_comm(brent_item)
+    copper_str = _fmt_comm(copper_item)
+
+    message = (
+        f"🌅 *SEANS AÇILIŞI EMTİA & TEKNİK ANALİZ SAĞLIK KONTROLÜ*\n"
+        f"📅 *Tarih:* {today_str} — 09:55 TR (Seans Açılış Kontrolü)\n\n"
+        f"🟡 *Ons Altın:* {gold_str}\n"
+        f"⚪ *Ons Gümüş:* {silver_str}\n"
+        f"🛢️ *Brent Petrol:* {brent_str}\n"
+        f"🔴 *Bakır Futures:* {copper_str}\n\n"
+        f"✅ *Piyasa Tarama Motoru:* %100 Aktif ve Taramalar Başlatıldı.\n"
+        f"🎯 *Korelasyon Eşiği:* ≥ %1.00 Emtia Yükselişlerinde Yüksek Güvenli Alarmlar Gönderilecek!"
+    )
+
+    delivered = _notify(message)
+    _append_system_notification_log("opening-diagnostic", message, delivered)
+    if delivered:
+        state[diag_key] = True
+        _save_state(state)
+
+
+def check_commodity_correlation_alerts(payload: dict) -> None:
+    """Send positive 0.5-point commodity milestones and rapid-rise correlation alerts."""
+    import math
+
+    market_board = payload.get("marketBoard", [])
+    if not market_board:
+        return
+
+    state = _load_state()
+    today_str = get_tr_now().strftime("%Y-%m-%d")
+    changed = False
+
+    stocks_dict = {s.get("ticker"): s for s in payload.get("stocks", [])}
+
+    for comm in COMMODITY_MAPPING:
+        macro_item = next((m for m in market_board if m.get("label") == comm["macro_label"]), None)
+        if not macro_item or macro_item.get("daily") is None:
+            continue
+
+        try:
+            comm_pct = float(macro_item["daily"])
+            comm_val = float(macro_item["value"])
+        except (TypeError, ValueError):
+            continue
+
+        short_change_raw = macro_item.get("shortChange")
+        try:
+            short_change = float(short_change_raw) if short_change_raw is not None else None
+        except (TypeError, ValueError):
+            short_change = None
+
+        current_step = None
+        step_key = None
+        if comm_pct >= comm["min_move"]:
+            current_step = round(math.floor(comm_pct * 2.0) / 2.0, 1)
+            step_key = f"commodity_step_{comm['name']}_{today_str}_{current_step:.1f}"
+
+        spike_bucket = int(get_tr_now().timestamp() // (15 * 60))
+        spike_key = f"commodity_spike_{comm['name']}_{today_str}_{spike_bucket}"
+        is_new_step = bool(step_key and not state.get(step_key))
+        is_new_spike = bool(
+            short_change is not None
+            and short_change >= COMMODITY_SPIKE_PCT
+            and not state.get(spike_key)
+        )
+        if not is_new_step and not is_new_spike:
+            continue
+
+        stock_lines = []
+        lagging_stocks = []
+        leading_stocks = []
+        for rel in comm["related"]:
+            ticker = rel["ticker"]
+            stock_obj = stocks_dict.get(ticker)
+            if not stock_obj:
+                continue
+
+            quote = stock_obj.get("delayedQuote") or {}
+            stock_price = float(quote.get("price") or stock_obj.get("price") or 0)
+            stock_pct = float(stock_obj.get("daily", 0) or 0)
+            if stock_pct >= comm_pct:
+                tag = "🚀 (Önden Tepki)"
+                leading_stocks.append(f"#{ticker} (*%{stock_pct:+.2f}*)")
+            elif stock_pct < (comm_pct * 0.5):
+                tag = "⚡ (GECİKMELİ FIRSAT)"
+                lagging_stocks.append(f"#{ticker} (*%{stock_pct:+.2f}*)")
+            else:
+                tag = "📈 (Paralel Tepki)"
+            stock_lines.append(
+                f"  • *#{ticker}* ({rel['name']}): {stock_price:.2f} TL | "
+                f"Günlük: *%{stock_pct:+.2f}* {tag}"
+            )
+
+        insights = []
+        if leading_stocks:
+            insights.append(
+                f"• {comm['name']} *%{comm_pct:+.2f}* iken "
+                f"{', '.join(leading_stocks)} önden güçlü yükseldi."
+            )
+        if lagging_stocks:
+            insights.append(
+                f"• ⚡ *GECİKMELİ TEPKİ FIRSATI:* {', '.join(lagging_stocks)} "
+                "emtia yükselişine henüz güçlü tepki vermedi."
+            )
+        if not insights:
+            insights.append("• İlişkili hisselerde belirgin bir gecikme saptanmadı.")
+
+        trigger_lines = []
+        if is_new_step:
+            trigger_lines.append(f"Günlük basamak: *%{current_step:+.1f}*")
+        if is_new_spike:
+            window = int(macro_item.get("shortWindowMinutes") or 15)
+            trigger_lines.append(f"Ani {window} dk hareket: *%{short_change:+.2f}*")
+
+        stock_block = "\n".join(stock_lines) if stock_lines else "  • İlişkili BIST hissesi verisi henüz alınamadı."
+        insight_text = "\n".join(insights)
+        message = (
+            f"{comm['icon']} *EMTİA YÜKSELİŞ & KORELASYON ALARMI*\n\n"
+            f"📊 *Emtia:* {comm['name']} ({macro_item['label']})\n"
+            f"💵 *Seviye:* {comm_val:,.2f} $ | Günlük: *%{comm_pct:+.2f}*\n"
+            f"⏱️ {' | '.join(trigger_lines)}\n"
+            f"🕓 Veri zamanı: {macro_item.get('timestamp', '—')}\n\n"
+            f"🔗 *İlişkili hisseler (BIST yaklaşık 15 dk gecikmeli):*\n{stock_block}\n\n"
+            f"💡 *Kıyaslama:*\n{insight_text}"
+        )
+
+        delivered = _notify(message)
+        _append_system_notification_log(
+            "commodity",
+            message,
+            delivered,
+            ticker=comm["name"],
+            price=comm_val,
+            context={
+                "trigger": "commodity_correlation",
+                "commodity": comm["name"],
+                "commodityLabel": macro_item.get("label"),
+                "commodityDailyPercent": comm_pct,
+                "commodityShortPercent": short_change,
+                "commodityTimestamp": macro_item.get("timestamp"),
+                "milestonePercent": current_step if is_new_step else None,
+                "rapidRise": is_new_spike,
+                "relatedTickers": [item["ticker"] for item in comm["related"]],
+                "laggingTickers": lagging_stocks,
+                "leadingTickers": leading_stocks,
+            },
+        )
+        if delivered:
+            if current_step is not None:
+                step = float(comm["min_move"])
+                while step <= current_step:
+                    state[f"commodity_step_{comm['name']}_{today_str}_{step:.1f}"] = True
+                    step = round(step + 0.5, 1)
+            if is_new_spike:
+                state[spike_key] = True
+            changed = True
+
+    if changed:
+        _save_state(state)
+
+
+def _run_once_unlocked() -> list[dict]:
     try:
-        payload = scan_market()
-        opportunities = opportunity_snapshot(payload)
-        existing = {item["ticker"] for item in opportunities}
-        opportunities.extend(item for item in manual_opportunity_snapshot(payload) if item["ticker"] not in existing)
-        tracks = _record_tracking(payload, opportunities)
+        payload = dict(scan_market())
+        commodity_rows = intraday_commodity_snapshots()
+        if commodity_rows:
+            board_by_label = {
+                item.get("label"): dict(item)
+                for item in payload.get("marketBoard", [])
+                if item.get("label")
+            }
+            for item in commodity_rows:
+                board_by_label[item["label"]] = item
+            payload["marketBoard"] = list(board_by_label.values())
+
+        stock_data_is_fresh = not payload.get("staleData", False)
+        # Analyst-only mode: Oğuz and Ahmet Mergen levels are the only
+        # notification source and the only new tracking records.
+        opportunities = []
+        tracks = _load_tracking()
         state = _load_state()
         today_str = get_tr_now().strftime("%Y-%m-%d")
         changed = False
-        for item in opportunities:
+        notification_candidates = []
+        for item in notification_candidates:
             key = f"{today_str}|manual|{item['ticker']}" if item.get("manual") else f"{today_str}|{item['ticker']}|{item['strategy']}"
             if state.get(key):
                 continue
@@ -672,21 +1171,15 @@ def run_once() -> list[dict]:
         if changed:
             _save_state(state)
 
-        # Always check and send scheduled summary bulletins for 10:00, 12:00, 14:00, 16:00, 18:00, 18:30
-        check_and_send_scheduled_summaries(payload)
-
-        # Check Oğuz/Mergen analyst support/resistance/entry level proximity alerts
+        # Analyst levels use the current quote overlay and must not wait for
+        # the expensive technical model refresh. Oğuz alerts are the user's
+        # primary channel, so check them before the lower-priority summaries.
         check_analyst_level_alerts(payload)
+        _refresh_analyst_tracks(payload)
+        tracks = _load_tracking()
 
-        # Check real-time intraday price movements (e.g. +2%, +4%, +6% moves)
-        check_intraday_price_movements(payload)
-
-        # Update 10K Paper Trading Auto-Portfolio state automatically
-        try:
-            from auto_portfolio import update_auto_portfolio
-            update_auto_portfolio(payload.get("stocks", []), today_str)
-        except Exception:
-            pass
+        # Analyst-only mode: model summaries, commodity correlations and
+        # paper-portfolio events are intentionally disabled.
 
         with _status_lock:
             _status.update({"running": True, "lastRun": datetime.now().astimezone().isoformat(timespec="seconds"), "lastError": None, "opportunities": opportunities, "tracking": list(tracks.values()), "notificationsEnabled": bool(os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()), "topic": os.getenv("NTFY_TOPIC", DEFAULT_NTFY_TOPIC).strip()})
@@ -697,26 +1190,30 @@ def run_once() -> list[dict]:
         raise
 
 
+def run_once() -> list[dict]:
+    """Run one notification cycle; overlapping HTTP/background calls share one lock."""
+    if not _run_lock.acquire(blocking=False):
+        with _status_lock:
+            return list(_status.get("opportunities") or [])
+    try:
+        return _run_once_unlocked()
+    finally:
+        _run_lock.release()
+
+
 def worker_status() -> dict:
     with _status_lock:
         return dict(_status)
 
 
-def notification_log(limit: int = 200) -> list[dict]:
+def notification_log(limit: int = 500, date: str | None = None) -> list[dict]:
     try:
         rows = json.loads(NOTIFICATION_LOG_PATH.read_text(encoding="utf-8")) if NOTIFICATION_LOG_PATH.exists() else []
         if not isinstance(rows, list):
             return []
-        deduped = []
-        failed_tickers = set()
-        for row in rows:
-            if row.get("status") == "not_sent":
-                ticker = row.get("ticker")
-                if ticker in failed_tickers:
-                    continue
-                failed_tickers.add(ticker)
-            deduped.append(row)
-        return deduped[: max(1, min(int(limit), 500))]
+        if date:
+            rows = [row for row in rows if str(row.get("timestamp", "")).startswith(date)]
+        return rows[: max(1, min(int(limit), 2000))]
     except (OSError, ValueError, TypeError):
         return []
 
@@ -737,6 +1234,74 @@ def _load_tracking() -> dict[str, dict]:
 
 def _save_tracking(value: dict[str, dict]) -> None:
     TRACKING_LOG_PATH.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
+
+
+def _start_or_update_analyst_track(
+    *, ticker: str, name: str, source: str, alert_type: str,
+    level: float, price: float, note: str, now: str,
+) -> None:
+    """Persist an analyst alert as a price-performance experiment."""
+    tracks = _load_tracking()
+    day = now[:10]
+    key = f"analyst|{source}|{ticker}|{alert_type}|{float(level):.4f}|{day}"
+    track = tracks.get(key)
+    if not track:
+        track = {
+            "trackId": key,
+            "ticker": ticker,
+            "name": name,
+            "strategy": "Analist Alarmı",
+            "analystSource": source,
+            "alarmType": alert_type,
+            "alarmLevel": float(level),
+            "alarmPrice": float(price),
+            "analystMessage": note,
+            "startedAt": now,
+            "startPrice": float(price),
+            "lastAt": now,
+            "lastPrice": float(price),
+            "highestPrice": float(price),
+            "highestAt": now,
+            "changePercent": 0.0,
+            "maxChangePercent": 0.0,
+            "updates": [],
+            "closed": False,
+        }
+        tracks[key] = track
+    _update_analyst_track(track, price, now)
+    _save_tracking(tracks)
+
+
+def _update_analyst_track(track: dict, price: float, now: str) -> None:
+    price = float(price)
+    track.setdefault("updates", []).append({"timestamp": now, "price": price})
+    track["updates"] = track["updates"][-100:]
+    track["lastAt"] = now
+    track["lastPrice"] = price
+    start = float(track.get("alarmPrice") or track.get("startPrice") or price)
+    track["changePercent"] = round((price / start - 1) * 100, 2) if start else 0.0
+    if price >= float(track.get("highestPrice") or price):
+        track["highestPrice"] = price
+        track["highestAt"] = now
+    track["maxChangePercent"] = round((float(track.get("highestPrice") or price) / start - 1) * 100, 2) if start else 0.0
+
+
+def _refresh_analyst_tracks(payload: dict) -> None:
+    tracks = _load_tracking()
+    prices = {}
+    for stock in payload.get("stocks", []):
+        quote = stock.get("delayedQuote") or {}
+        value = quote.get("price") or stock.get("price")
+        if value not in (None, ""):
+            prices[str(stock.get("ticker")).upper()] = float(value)
+    now = get_tr_now().isoformat(timespec="seconds")
+    changed = False
+    for track in tracks.values():
+        if track.get("strategy") == "Analist Alarmı" and track.get("ticker", "").upper() in prices:
+            _update_analyst_track(track, prices[track["ticker"].upper()], now)
+            changed = True
+    if changed:
+        _save_tracking(tracks)
 
 
 def _record_tracking(payload: dict, opportunities: list[dict]) -> dict[str, dict]:
@@ -792,7 +1357,10 @@ def _record_tracking(payload: dict, opportunities: list[dict]) -> dict[str, dict
             track["highestAt"] = now
         start = float(track.get("startPrice") or price)
         track["changePercent"] = round((price / start - 1) * 100, 2) if start else 0.0
-        _advance_trade_lifecycle(track, price, now)
+        if track.get("strategy") != "Analist Alarmı":
+            _advance_trade_lifecycle(track, price, now)
+        else:
+            _update_analyst_track(track, price, now)
     _save_tracking(tracks)
     return tracks
 

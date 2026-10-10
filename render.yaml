@@ -5,12 +5,24 @@ services:
     region: frankfurt
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 120 --max-requests 80 --max-requests-jitter 20
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: NTFY_TOPIC
         value: emirkan_bist_alarm
+      - key: OPPORTUNITY_INTERVAL_SECONDS
+        value: "60"
+      - key: SUMMARY_GRACE_MINUTES
+        value: "10"
+      - key: COMMODITY_SPIKE_PCT
+        value: "0.50"
+      - key: ANALYST_PROXIMITY_PCT
+        value: "0.75"
+      - key: SEND_INDIVIDUAL_OPPORTUNITY_ALERTS
+        value: "0"
+      - key: ENABLE_TELEGRAM_NOTIFICATIONS
+        value: "0"
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHAT_ID
