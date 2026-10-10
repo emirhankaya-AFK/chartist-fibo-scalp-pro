@@ -11,9 +11,12 @@ from market_scanner import scan_market, _load_excel_notes, _json_safe
 from backtest import backtest_ticker
 from analyst_benchmark import load_analyst_alerts
 from intraday_opportunity_worker import run_once as run_opportunity_scan, worker_status, notification_log, tracking_log, add_manual_tracking, manual_tracking
+from nvidia_workers import ask_worker, worker_log, worker_status as nvidia_worker_status
+from demo_core import init_db, portfolio as demo_portfolio, open_trade as demo_open_trade, close_trade as demo_close_trade
 
 
 app = Flask(__name__, static_folder=None)
+init_db()
 
 
 @lru_cache(maxsize=256)
@@ -83,6 +86,54 @@ def api_health():
             "safety": "Sinyaller yalnızca karar desteğidir; otomatik emir gönderilmez.",
         }
     )
+
+
+@app.get("/api/workers/status")
+def api_workers_status():
+    return jsonify({"status": "ok", "workers": nvidia_worker_status()})
+
+
+@app.get("/api/workers/log")
+def api_workers_log():
+    return jsonify({"status": "ok", "log": worker_log()})
+
+
+@app.post("/api/workers/ask")
+def api_workers_ask():
+    body = request.get_json(silent=True) or {}
+    try:
+        result = ask_worker(body.get("worker", "super"), str(body.get("prompt", "")), body.get("max_tokens", 1024))
+        return jsonify({"status": "ok", "result": result})
+    except ValueError as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 503
+
+
+@app.get("/api/demo/portfolio")
+def api_demo_portfolio():
+    return jsonify({"status": "ok", **demo_portfolio()})
+
+
+@app.post("/api/demo/trades")
+def api_demo_open_trade():
+    try:
+        return jsonify({"status": "ok", "mode": "demo", "trade": demo_open_trade(request.get_json(silent=True) or {})})
+    except ValueError as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 503
+
+
+@app.post("/api/demo/trades/<trade_id>/close")
+def api_demo_close_trade(trade_id: str):
+    body = request.get_json(silent=True) or {}
+    try:
+        return jsonify({"status": "ok", "mode": "demo", "trade": demo_close_trade(trade_id, float(body.get("exit_price", 0)), str(body.get("reason", "manual")))})
+    except ValueError as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 503
 
 
 @app.get("/api/market-wind")
