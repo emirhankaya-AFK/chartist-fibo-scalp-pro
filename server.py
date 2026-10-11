@@ -72,17 +72,38 @@ def _cached_backtest(ticker: str):
 
 @app.get("/")
 def index():
-    return send_from_directory(".", "index.html")
+    response = send_from_directory(".", "index.html")
+    response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 @app.get("/app.js")
 def app_javascript():
-    return send_from_directory(".", "app.js")
+    response = send_from_directory(".", "app.js")
+    response.headers["Cache-Control"] = "public, max-age=604800, immutable"
+    return response
 
 
 @app.get("/styles.css")
 def app_styles():
-    return send_from_directory(".", "styles.css")
+    response = send_from_directory(".", "styles.css")
+    response.headers["Cache-Control"] = "public, max-age=604800, immutable"
+    return response
+
+
+@app.get("/theme-v4.css")
+def app_theme():
+    response = send_from_directory(".", "theme-v4.css")
+    response.headers["Cache-Control"] = "public, max-age=604800, immutable"
+    return response
+
+
+@app.after_request
+def add_response_headers(response):
+    if request.path.startswith("/api/"):
+        response.headers.setdefault("Cache-Control", "no-store")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    return response
 
 
 @app.get("/favicon.ico")
@@ -300,6 +321,8 @@ def api_worker_toggle():
 
 def _opportunity_loop():
     interval = max(30, int(os.getenv("OPPORTUNITY_INTERVAL_SECONDS", "60")))
+    # Let the web process become responsive before background market work begins.
+    time.sleep(min(interval, 45))
     while True:
         if _worker_enabled:
             try:

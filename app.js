@@ -1495,6 +1495,54 @@ async function fetchMarketPayload(url = "/api/scan", attempts = 3) {
   throw lastError;
 }
 
+const MARKET_SNAPSHOT_KEY = "chartistMarketSnapshotV2";
+const MARKET_SNAPSHOT_MAX_AGE = 24 * 60 * 60 * 1000;
+
+function readCachedMarketPayload() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(MARKET_SNAPSHOT_KEY) || "null");
+    if (!cached || !cached.savedAt || !cached.payload || !Array.isArray(cached.payload.stocks)) return null;
+    if (Date.now() - Number(cached.savedAt) > MARKET_SNAPSHOT_MAX_AGE) return null;
+    return cached.payload;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedMarketPayload(payload) {
+  try {
+    localStorage.setItem(MARKET_SNAPSHOT_KEY, JSON.stringify({ savedAt: Date.now(), payload }));
+  } catch {
+    // Storage may be disabled; the live request remains the source of truth.
+  }
+}
+
+function restoreLocalUserState() {
+  try {
+    const savedPortfolio = JSON.parse(localStorage.getItem("chartistVirtualPortfolio") || "[]");
+    state.portfolio = Array.isArray(savedPortfolio) ? savedPortfolio : [];
+    const savedWatchlist = JSON.parse(localStorage.getItem("chartistWatchlist") || "[]");
+    state.watchlist = Array.isArray(savedWatchlist) ? savedWatchlist.filter((item) => typeof item === "string") : [];
+  } catch {
+    state.portfolio = [];
+    state.watchlist = [];
+  }
+}
+
+function hydrateMarketPayload(payload, { cached = false } = {}) {
+  stocks = payload.stocks;
+  restoreLocalUserState();
+  state.selectedTicker = rankedStocks()[0]?.ticker || null;
+  updateMarketMeta(payload);
+  if (cached) {
+    document.getElementById("dashboardDate").textContent = "ÖNCEKİ GÖRÜNÜM · CANLI VERİ YENİLENİYOR";
+    document.getElementById("sidebarDataState").textContent = "Hızlı önbellek gösteriliyor";
+  }
+  renderTable();
+  renderDetail();
+  document.body.classList.add("app-ready");
+}
+
 async function initializeMarketData() {
   stocks = [];
   document.getElementById("winnerTicker").textContent = "TARANIYOR";
@@ -1502,25 +1550,21 @@ async function initializeMarketData() {
   document.getElementById("winnerScore").textContent = "--";
   tableBody.innerHTML = "";
 
+  const cachedPayload = readCachedMarketPayload();
+  if (cachedPayload?.stocks?.length) {
+    hydrateMarketPayload(cachedPayload, { cached: true });
+  }
+
   try {
-    const payload = await fetchMarketPayload("/api/scan");
-    stocks = payload.stocks;
-    try {
-      const savedPortfolio = JSON.parse(localStorage.getItem("chartistVirtualPortfolio") || "[]");
-      state.portfolio = Array.isArray(savedPortfolio) ? savedPortfolio : [];
-      const savedWatchlist = JSON.parse(localStorage.getItem("chartistWatchlist") || "[]");
-      state.watchlist = Array.isArray(savedWatchlist) ? savedWatchlist.filter((item) => typeof item === "string") : [];
-    } catch {
-      state.portfolio = [];
-    }
-    state.selectedTicker = rankedStocks()[0].ticker;
-    updateMarketMeta(payload);
-    renderTable();
-    renderDetail();
+    const payload = await fetchMarketPayload("/api/scan", cachedPayload ? 1 : 2);
+    hydrateMarketPayload(payload);
+    saveCachedMarketPayload(payload);
     loadAutoPortfolio();
   } catch (error) {
-    stocks = [];
-    showMarketError(error);
+    if (!cachedPayload) {
+      stocks = [];
+      showMarketError(error);
+    }
     console.error("Piyasa verisi yüklenemedi", error);
   }
 }
@@ -1797,11 +1841,35 @@ async function refreshMarketData() {
 updateClocks();
 setInterval(updateClocks, 1000);
 initializeMarketData();
-loadAnalystBenchmark();
 loadDemoWorkers();
-loadExcelNotes();
-loadNotificationLog();
-loadCommodityGroups();
+
+function lazyLoadSection(id, loader) {
+  const element = document.getElementById(id);
+  if (!element) return;
+  let loaded = false;
+  const run = () => {
+    if (loaded) return;
+    loaded = true;
+    loader();
+  };
+  if (!("IntersectionObserver" in window)) {
+    setTimeout(run, 1200);
+    return;
+  }
+  const observer = new IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      observer.disconnect();
+      run();
+    }
+  }, { rootMargin: "500px 0px" });
+  observer.observe(element);
+}
+
+lazyLoadSection("analystBenchmark", loadAnalystBenchmark);
+lazyLoadSection("analystNotesView", loadExcelNotes);
+lazyLoadSection("notificationsView", loadNotificationLog);
+lazyLoadSection("commodityGroupsView", loadCommodityGroups);
+lazyLoadSection("autoPortfolioView", loadAutoPortfolio);
 setInterval(refreshMarketData, 5 * 60 * 1000);
 setInterval(loadCommodityGroups, 5 * 60 * 1000);
 
