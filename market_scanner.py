@@ -206,6 +206,16 @@ def _load_last_successful_scan() -> dict[str, Any] | None:
     return None
 
 
+def _snapshot_is_recent(payload: dict[str, Any], today: date | None = None) -> bool:
+    """Treat Friday's verified close as current through a normal weekend/Monday open."""
+    try:
+        snapshot_date = date.fromisoformat(str(payload.get("dataDate") or ""))
+    except ValueError:
+        return False
+    age_days = ((today or datetime.now().astimezone().date()) - snapshot_date).days
+    return 0 <= age_days <= 3
+
+
 def _request_bytes(url: str, timeout: int = 30) -> bytes:
     request = urllib.request.Request(url, headers=REQUEST_HEADERS)
     with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -1562,9 +1572,15 @@ def scan_market(force: bool = False) -> dict[str, Any]:
         persisted = _load_last_successful_scan()
         if persisted and isinstance(persisted.get("stocks"), list) and persisted["stocks"]:
             persisted = dict(persisted)
-            persisted["staleData"] = True
-            persisted["staleReason"] = "cold-start-cache"
-            persisted["delayNotice"] = "Son doğrulanmış tarama gösteriliyor; güncelleme manuel yenilemeyle alınabilir."
+            is_recent = _snapshot_is_recent(persisted)
+            persisted["staleData"] = not is_recent
+            persisted["staleReason"] = None if is_recent else "cold-start-cache"
+            persisted["snapshotCached"] = True
+            persisted["delayNotice"] = (
+                "Son doğrulanmış resmî kapanış gösteriliyor; arka planda yeni tarama kontrol ediliyor."
+                if is_recent
+                else "Son doğrulanmış tarama eski; arka planda yeni tarama başlatıldı."
+            )
             with _cache_lock:
                 _cache["created_at"] = now
                 _cache["payload"] = persisted

@@ -115,7 +115,7 @@ def favicon():
 def api_scan():
     try:
         payload = _json_safe(scan_market())
-        if payload.get("staleData"):
+        if payload.get("staleData") or payload.get("snapshotCached"):
             trigger_full_scan_async()
         payload["fullScanRefresh"] = dict(_full_scan_status)
         return jsonify(payload)
