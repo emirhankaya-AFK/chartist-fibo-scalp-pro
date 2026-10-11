@@ -1568,7 +1568,9 @@ def scan_market(force: bool = False) -> dict[str, Any]:
             with _cache_lock:
                 _cache["created_at"] = now
                 _cache["payload"] = persisted
-            return _latest_display_payload(persisted)
+            # The first paint must be network-free. Delayed quote enrichment and
+            # the fresh technical scan continue in background after this payload.
+            return persisted
 
     try:
         return _latest_display_payload(_scan_market_fresh(now), force=True)
