@@ -98,6 +98,13 @@ def app_theme():
     return response
 
 
+@app.get("/theme-v5.css")
+def app_theme_v5():
+    response = send_from_directory(".", "theme-v5.css")
+    response.headers["Cache-Control"] = "public, max-age=604800, immutable"
+    return response
+
+
 @app.after_request
 def add_response_headers(response):
     if request.path.startswith("/api/"):
